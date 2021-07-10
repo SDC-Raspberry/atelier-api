@@ -1,0 +1,23 @@
+{
+  "name": "milo-sdc",
+  "version": "1.0.0",
+  "description": "yeah you know me",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SDC-Raspberry/milo-sdc.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/SDC-Raspberry/milo-sdc/issues"
+  },
+  "homepage": "https://github.com/SDC-Raspberry/milo-sdc#readme",
+  "devDependencies": {
+    "jest": "^27.0.6"
+  }
+}
