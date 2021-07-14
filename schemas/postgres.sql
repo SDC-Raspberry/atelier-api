@@ -13,6 +13,15 @@ CREATE TABLE IF NOT EXISTS products (
 CREATE TABLE IF NOT EXISTS reviews (
   review_id INT GENERATED ALWAYS AS IDENTITY,
   product_id INT,
+  summary TEXT,
+  recommend BOOLEAN,
+  reported BOOLEAN,
+  response TEXT,
+  body TEXT,
+  date INT,
+  reviewer_name TEXT,
+  reviewer_email TEXT,
+  helpfulness INT,
   PRIMARY KEY(review_id),
   CONSTRAINT fk_product_id
     FOREIGN KEY(product_id)
