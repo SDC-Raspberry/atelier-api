@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS reviews (
   reported BOOLEAN,
   response TEXT,
   body TEXT,
-  date INT,
+  date DATE,
   reviewer_name TEXT,
   reviewer_email TEXT,
   helpfulness INT,
