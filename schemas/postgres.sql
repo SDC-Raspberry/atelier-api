@@ -1,49 +1,50 @@
 DROP SCHEMA IF EXISTS reviews CASCADE;
 
 CREATE TABLE IF NOT EXISTS products (
-  product_id INT GENERATED ALWAYS AS IDENTITY,
+  id INT GENERATED ALWAYS AS IDENTITY,
   name TEXT,
-  category INT,
   slogan TEXT,
   description TEXT,
+  category INT,
   default_price VARCHAR(7),
-  PRIMARY KEY(product_id)
+  PRIMARY KEY(id)
 );
 
 CREATE TABLE IF NOT EXISTS reviews (
-  review_id INT GENERATED ALWAYS AS IDENTITY,
+  id INT GENERATED ALWAYS AS IDENTITY,
   product_id INT,
+  rating INT,
+  date INT,
   summary TEXT,
+  body TEXT,
   recommend BOOLEAN,
   reported BOOLEAN,
-  response TEXT,
-  body TEXT,
-  date DATE,
   reviewer_name TEXT,
   reviewer_email TEXT,
+  response TEXT,
   helpfulness INT,
-  PRIMARY KEY(review_id),
+  PRIMARY KEY(id),
   CONSTRAINT fk_product_id
     FOREIGN KEY(product_id)
       REFERENCES products(product_id)
 );
 
 CREATE TABLE IF NOT EXISTS review_photos (
-  photo_id INT GENERATED ALWAYS AS IDENTITY,
+  id INT GENERATED ALWAYS AS IDENTITY,
   review_id INT,
   url TEXT,
-  PRIMARY KEY(photo_id),
+  PRIMARY KEY(id),
   CONSTRAINT fk_review_id
     FOREIGN KEY(review_id)
       REFERENCES reviews(review_id)
 );
 
 CREATE TABLE IF NOT EXISTS characteristic_ratings (
-  rating_id INT GENERATED ALWAYS AS IDENTITY,
-  review_id INT,
+  id INT GENERATED ALWAYS AS IDENTITY,
   characteristic_id INT,
+  review_id INT,
   value INT,
-  PRIMARY KEY(rating_id),
+  PRIMARY KEY(id),
   CONSTRAINT fk_review_id
     FOREIGN KEY(review_id)
       REFERENCES reviews(review_id),
@@ -53,9 +54,8 @@ CREATE TABLE IF NOT EXISTS characteristic_ratings (
 );
 
 CREATE TABLE IF NOT EXISTS characteristics (
-  characteristic_id INT GENERATED ALWAYS AS IDENTITY,
+  id INT GENERATED ALWAYS AS IDENTITY,
+  product_id INT,
   value TEXT,
-  PRIMARY KEY(characteristic_id)
+  PRIMARY KEY(id)
 );
-
-SELECT * FROM characteristics;
