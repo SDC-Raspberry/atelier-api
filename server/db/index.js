@@ -58,10 +58,48 @@ const Photo = mongoose.model("reviews_photos", photoSchema);
 const CharacteristicReview = mongoose.model("characteristic_reviews", characteristicReviewSchema);
 const Characteristic = mongoose.model("characteristics", characteristicSchema);
 
-// Queries for export
+// Helper functions
 
-const getAllProducts = () => {
-  return Product.findOne({});
+const newestCompare = (a, b) => {
+  // Assuming UNIX timestamp
+  return a.date - b.date;
+}
+
+const helpfulCompare = (a, b) => {
+  return a.helpfulness - b.helpfulness;
+}
+
+const relevantCompare = (a, b) => {
+  // Still don't know what this does. WIll set as helpfulness for now
+  return a.helpfulness - b.helpfulness;
+}
+
+// Query Functions
+
+const getReviews = async (page, count, sort, product_id) => {
+  page = page ? Number(page) : 1;
+  count = count ? Number(count) : 5;
+  let sortFunction;
+
+  if (sort === "newest") {
+    sortFunction = newestCompare;
+  } else if (sort === "helpful") {
+    sortFunction = helpfulCompare;
+  } else if (sort === "relevant") {
+    sortFunction = relevantCompare;
+  }
+
+  const offset = count * (page - 1);
+  const totalResults = offset + count;
+  const reviewQuery = Review.find()
+    .where({product_id: product_id})
+    .limit(totalResults);
+  const result = await reviewQuery.exec();
+  if (sortFunction) {
+    result.sort(sortFunction);
+  }
+  result.splice(0, offset);
+  return result;
 };
 
 // Connect to database
@@ -86,5 +124,5 @@ db.once("open", () => {
 // Export queries
 
 module.exports = {
-  getAllProducts
+  getReviews
 };

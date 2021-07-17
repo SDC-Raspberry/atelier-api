@@ -4,8 +4,16 @@ const app = express();
 
 const db = require('./db');
 
-app.get('/', (req, res) => {
-  db.getAllProducts()
+//
+app.get('/reviews', (req, res) => {
+  const {
+    page,
+    count,
+    sort,
+    product_id
+  } = req.query;
+
+  db.getReviews(page, count, sort, product_id)
     .then(result => res.end(JSON.stringify(result)));
 });
 
