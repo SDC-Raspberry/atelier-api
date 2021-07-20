@@ -76,16 +76,44 @@ const getReviews = async (page, count, sort, product_id) => {
   const offset = count * (page - 1);
   const totalResults = offset + count;
   const reviewQuery = Review.find()
-    .where({product_id: product_id})
+    .where({ product_id: product_id })
     .limit(totalResults);
+
   console.time('query');
-  const results = await reviewQuery.exec();
-  console.timeEnd('query');
+
+  let reviewResults = await reviewQuery.lean().exec();
   if (sortFunction) {
-    results.sort(sortFunction);
+    reviewResults.sort(sortFunction);
   }
-  results.splice(0, offset);
-  output.results = results;
+  reviewResults.splice(0, offset);
+  // Remove mongo default _id field
+  reviewResults = reviewResults.map(result => {
+    delete result._id;
+    return result;
+  });
+
+  // Create array of executed queries as Promises
+  const photoResults = await reviewResults.map(async (result, index) => {
+    const photoQuery = ReviewPhoto.find()
+      .where({ review_id: result.id });
+    return await photoQuery.lean().exec();
+  });
+
+  // When all promises have resolved, add them to output
+  await Promise.all(photoResults)
+    .then(allResults => {
+      allResults.map((result, index) => {
+        reviewResults[index].photos = result.map(photo => {
+          delete photo._id;
+          delete photo.review_id;
+          return photo;
+        });
+      });
+    });
+
+  output.results = reviewResults;
+
+  console.timeEnd('query');
 
   return output;
 };

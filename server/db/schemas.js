@@ -45,6 +45,11 @@ const productSchema = new mongoose.Schema({
   default_price: String,
 }, noTimestamps);
 
+// Create indexes
+
+reviewSchema.index({ product_id: 1 });
+reviewPhotoSchema.index({ review_id: 1 });
+
 // Create models
 
 const Product = mongoose.model("products", productSchema);
