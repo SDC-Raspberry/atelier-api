@@ -7,56 +7,34 @@ mongoose.connect(`mongodb://localhost:27017/${dbName}`, {
   useUnifiedTopology: true,
 });
 
-// Schemas and Models
+// Get Models
 
-const noTimestamps = {
-  timestamps: false
-};
+const {
+  Product,
+  Review,
+  ReviewPhoto,
+  CharacteristicReview,
+  Characteristic
+} = require('./schemas.js');
 
-const characteristicSchema = new mongoose.Schema({
-  id: Number,
-  product_id: Number,
-  name: String,
-}, noTimestamps);
-const characteristicReviewSchema = new mongoose.Schema({
-  id: Number,
-  characteristic_id: Number,
-  review_id: Number,
-  value: Number,
-}, noTimestamps);
-const photoSchema = new mongoose.Schema({
-  id: Number,
-  review_id: Number,
-  url: String,
-}, noTimestamps);
-const reviewSchema = new mongoose.Schema({
-  id: Number,
-  product_id: Number,
-  rating: Number,
-  date: Number,
-  summary: String,
-  body: String,
-  recommend: Boolean,
-  reported: Boolean,
-  reviewer_name: String,
-  reviewer_email: String,
-  response: String,
-  helpfulness: Number,
-}, noTimestamps);
-const productSchema = new mongoose.Schema({
-  id: Number,
-  name: String,
-  slogan: String,
-  description: String,
-  category: String,
-  default_price: String,
-}, noTimestamps);
+// Connect to database
 
-const Product = mongoose.model("products", productSchema);
-const Review = mongoose.model("reviews", reviewSchema);
-const Photo = mongoose.model("reviews_photos", photoSchema);
-const CharacteristicReview = mongoose.model("characteristic_reviews", characteristicReviewSchema);
-const Characteristic = mongoose.model("characteristics", characteristicSchema);
+const db = mongoose.connection;
+db.on("error", console.error.bind(console, "connection error:"));
+db.once("open", () => {
+  console.log(`Mongoose DB "${dbName}" initialized\n`)
+
+  Product.findOne({})
+    .then(result => console.log('products: ' + !!result))
+    .then(() => Review.findOne({}))
+    .then(result => console.log('reviews: ' + !!result))
+    .then(() => ReviewPhoto.findOne({}))
+    .then(result => console.log('reviews_photos: ' + !!result))
+    .then(() => CharacteristicReview.findOne({}))
+    .then(result => console.log('characteristics_reviews: ' + !!result))
+    .then(() => Characteristic.findOne({}))
+    .then(result => console.log('characteristics: ' + !!result));
+});
 
 // Helper functions
 
@@ -81,6 +59,13 @@ const getReviews = async (page, count, sort, product_id) => {
   count = count ? Number(count) : 5;
   let sortFunction;
 
+  const output = {
+    product: product_id,
+    page: page,
+    count: count,
+    results: [],
+  };
+
   if (sort === "newest") {
     sortFunction = newestCompare;
   } else if (sort === "helpful") {
@@ -88,38 +73,22 @@ const getReviews = async (page, count, sort, product_id) => {
   } else if (sort === "relevant") {
     sortFunction = relevantCompare;
   }
-
   const offset = count * (page - 1);
   const totalResults = offset + count;
   const reviewQuery = Review.find()
     .where({product_id: product_id})
     .limit(totalResults);
-  const result = await reviewQuery.exec();
+  console.time('query');
+  const results = await reviewQuery.exec();
+  console.timeEnd('query');
   if (sortFunction) {
-    result.sort(sortFunction);
+    results.sort(sortFunction);
   }
-  result.splice(0, offset);
-  return result;
+  results.splice(0, offset);
+  output.results = results;
+
+  return output;
 };
-
-// Connect to database
-
-const db = mongoose.connection;
-db.on("error", console.error.bind(console, "connection error:"));
-db.once("open", () => {
-  console.log(`Mongoose DB "${dbName}" initialized\n`)
-
-  Product.findOne({})
-    .then(result => console.log('products: ' + !!result))
-    .then(() => Review.findOne({}))
-    .then(result => console.log('reviews: ' + !!result))
-    .then(() => Photo.findOne({}))
-    .then(result => console.log('reviews_photos: ' + !!result))
-    .then(() => CharacteristicReview.findOne({}))
-    .then(result => console.log('characteristics_reviews: ' + !!result))
-    .then(() => Characteristic.findOne({}))
-    .then(result => console.log('characteristics: ' + !!result));
-});
 
 // Export queries
 
