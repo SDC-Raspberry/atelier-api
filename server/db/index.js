@@ -52,6 +52,8 @@ const relevantCompare = (a, b) => {
   return a.helpfulness - b.helpfulness;
 }
 
+const sum = (acc, value) => acc + value;
+
 // Query Functions
 
 const getReviews = async (page, count, sort, product_id) => {
@@ -124,6 +126,7 @@ const getReviewsMeta = async (product_id) => {
     product_id,
     ratings: {},
     recommended: {},
+    characteristics: {},
   };
 
   // Get product reviews
@@ -134,7 +137,12 @@ const getReviewsMeta = async (product_id) => {
     .then(results => reviews = results);
   console.timeEnd('reviews query');
 
+  const ratingIds = [];
+
   reviews.forEach((review) => {
+    // Add rating ID to ratingIds array
+    ratingIds.push(review.id);
+
     // Add rating to output
     if (!output.ratings[review.rating]) {
       output.ratings[review.rating] = 1;
@@ -155,6 +163,58 @@ const getReviewsMeta = async (product_id) => {
       output.recommended[recommend] += 1;
     }
   });
+
+  // Get characteristics
+
+  console.time('characteristicReview query');
+  const characteristicReviewResults = ratingIds.map(async (review_id) => {
+    const query = CharacteristicReview.find({ review_id });
+    return await query.lean().exec();
+  });
+
+  const characteristicLookup = {};
+
+  // Add each characteristic to the lookup
+  await Promise.all(characteristicReviewResults)
+    .then(results => {
+      results.forEach(result => {
+        result.forEach(characteristic => {
+          if (!characteristicLookup[characteristic.characteristic_id]) {
+            characteristicLookup[characteristic.characteristic_id] = {
+              name: '',
+              ratings: [characteristic.value],
+            };
+          } else {
+            characteristicLookup[characteristic.characteristic_id].ratings.push(characteristic.value);
+          }
+        });
+      });
+    });
+
+  // Get the individual characteristic details
+  const characteristicResults = Object.keys(characteristicLookup).map(id => {
+    const query = Characteristic.find({ id });
+    return query.lean().exec();
+  });
+
+  await Promise.all(characteristicResults)
+    .then(results => {
+      results.forEach(characteristic => {
+        characteristic = characteristic[0];
+        characteristicLookup[characteristic.id].name = characteristic.name;
+      });
+    });
+
+  // Add correctly formatted characteristics to the output
+  for (const id in characteristicLookup) {
+    const characteristic = characteristicLookup[id];
+    console.log(characteristic.ratings, characteristic.ratings.length);
+    const value = characteristic.ratings.reduce(sum, 0) / characteristic.ratings.length;
+    output.characteristics[characteristic.name] = {
+      id: Number(id),
+      value: value.toFixed(3),
+    };
+  }
 
   return output;
 };
