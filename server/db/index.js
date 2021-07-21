@@ -122,24 +122,39 @@ const getReviewsMeta = async (product_id) => {
   // create output object
   const output = {
     product_id,
-    ratings: {}
+    ratings: {},
+    recommended: {},
   };
 
-  console.time('ratings by number query');
-  const ratingsByNumber = [1,2,3,4,5].map(async (number) => {
-    const query = Review.countDocuments({ product_id, rating: number })
-    return await query.lean().exec();
-  });
-  console.timeEnd('ratings by number query');
+  // Get product reviews
+  console.time('reviews query');
+  const reviewsQuery = Review.find({ product_id })
+  let reviews;
+  await reviewsQuery.lean().exec()
+    .then(results => reviews = results);
+  console.timeEnd('reviews query');
 
-  await Promise.all(ratingsByNumber)
-    .then(results => {
-      results.forEach((result, index) => {
-        if (result) {
-          output.ratings[index + 1] = result;
-        }
-      });
-    });
+  reviews.forEach((review) => {
+    // Add rating to output
+    if (!output.ratings[review.rating]) {
+      output.ratings[review.rating] = 1;
+    } else {
+      output.ratings[review.rating] += 1;
+    }
+
+    // Add recommendation
+    let recommend;
+    if (review.recommend === true) {
+      recommend = 1;
+    } else {
+      recommend = 0;
+    }
+    if (!output.recommended[recommend]) {
+      output.recommended[recommend] = 1;
+    } else {
+      output.recommended[recommend] += 1;
+    }
+  });
 
   return output;
 };
