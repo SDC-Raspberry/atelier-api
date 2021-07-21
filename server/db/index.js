@@ -118,8 +118,35 @@ const getReviews = async (page, count, sort, product_id) => {
   return output;
 };
 
+const getReviewsMeta = async (product_id) => {
+  // create output object
+  const output = {
+    product_id,
+    ratings: {}
+  };
+
+  console.time('ratings by number query');
+  const ratingsByNumber = [1,2,3,4,5].map(async (number) => {
+    const query = Review.countDocuments({ product_id, rating: number })
+    return await query.lean().exec();
+  });
+  console.timeEnd('ratings by number query');
+
+  await Promise.all(ratingsByNumber)
+    .then(results => {
+      results.forEach((result, index) => {
+        if (result) {
+          output.ratings[index + 1] = result;
+        }
+      });
+    });
+
+  return output;
+};
+
 // Export queries
 
 module.exports = {
-  getReviews
+  getReviews,
+  getReviewsMeta
 };

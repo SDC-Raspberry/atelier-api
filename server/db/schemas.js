@@ -48,6 +48,7 @@ const productSchema = new mongoose.Schema({
 // Create indexes
 
 reviewSchema.index({ product_id: 1 });
+reviewSchema.index({ rating: 1 });
 reviewPhotoSchema.index({ review_id: 1 });
 
 // Create models

@@ -23,7 +23,8 @@ app.get('/reviews/meta', (req, res) => {
     product_id,
   } = req.query;
 
-  // Run the db query
+  db.getReviewsMeta(product_id)
+    .then(result => res.end(JSON.stringify(result)));
 });
 
 // POST /reviews
@@ -52,7 +53,7 @@ app.put('/reviews/:review_id/helpful', (req, res) => {
   // Run the db query
 });
 
-// PUT /reviews/:review_id/helpful
+// PUT /reviews/:review_id/report
 app.put('/reviews/:review_id/report', (req, res) => {
   const {
     review_id,
@@ -62,4 +63,4 @@ app.put('/reviews/:review_id/report', (req, res) => {
 });
 
 // Start the server
-app.listen(3000, () => console.log('listening on 3000\n'));
+app.listen(3000, () => console.log('listening on http://localhost:3000\n'));
