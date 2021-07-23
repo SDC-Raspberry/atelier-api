@@ -2,7 +2,8 @@
 const express = require('express');
 const app = express();
 
-const db = require('./db');
+const db = require('./db/db.js');
+const queries = require('./db/queries.js');
 
 //
 app.get('/reviews', (req, res) => {
@@ -13,7 +14,7 @@ app.get('/reviews', (req, res) => {
     product_id
   } = req.query;
 
-  db.getReviews(page, count, sort, product_id)
+  queries.getReviews(page, count, sort, product_id)
     .then(result => res.end(JSON.stringify(result)));
 });
 

@@ -11,10 +11,11 @@ const {
   Characteristic
 } = require('../server/db/schemas.js');
 
-// Define mock data
+const queries = require('../server/db/queries.js');
 
 const {
-  reviewMockData
+  reviewMockData,
+  reviewPhotoMockData
 } = require('./_mockData.js');
 
 describe("Query Tests", () => {
@@ -31,28 +32,43 @@ describe("Query Tests", () => {
   describe('getReviews', () => {
     beforeEach((done) => {
       Review.deleteMany({})
+        .then(() => ReviewPhoto.deleteMany({}))
         .then(() => done());
     });
 
-    // do all the query tests
-    it('should add entries into the db', () => {
+    it('should return the meta content for a query', () => {
+      return queries.getReviews(1, 5, undefined, 12345)
+        .then(response => {
+          assert.propertyVal(response, 'product', 12345);
+          assert.propertyVal(response, 'page', 1);
+          assert.propertyVal(response, 'count', 5);
+          assert.exists(response.results);
+        });
+    });
+
+    it('should get an entry for a given product_id that includes a photo entry', () => {
       return Review.collection.insertMany(reviewMockData)
-        .then(result => {
-          const query = Review.find({ product_id : 1 });
-          return query.lean().exec()
-            .then(result => {
-              assert.lengthOf(result, 1);
-              assert.propertyVal(result[0], 'reviewer_name', 'mymainstreammother');
-              assert.propertyVal(result[0], 'reviewer_email', 'first.last@gmail.com');
-            });
-        }).then(result => {
-          const query = Review.find({ product_id : 2 });
-          return query.lean().exec()
-            .then(result => {
-              assert.lengthOf(result, 1);
-              assert.propertyVal(result[0], 'reviewer_name', 'negativity');
-              assert.propertyVal(result[0], 'reviewer_email', 'first.last@gmail.com');
-            });
+        .then(() => ReviewPhoto.collection.insertMany(reviewPhotoMockData))
+        .then(() => queries.getReviews(1, 5, undefined, 12))
+        .then(response => {
+          const results = response.results;
+          assert.lengthOf(results, 1);
+          assert.propertyVal(results[0], 'reviewer_name', 'Sallie_Kovacek');
+          assert.propertyVal(results[0], 'reviewer_email', 'Magdalen49@yahoo.com');
+          assert.isArray(results[0].photos);
+          assert.lengthOf(results[0].photos, 1);
+          assert.propertyVal(results[0].photos[0], 'id', 13);
+          assert.propertyVal(results[0].photos[0], 'url', 'https://images.unsplash.com/photo-1526948128573-703ee1aeb6fa?ixlib=rb-1.2.1&auto=format&fit=crop&w=1650&q=80');
+        });
+    });
+
+    it('should return an empty array when no entries exist at a given product_id', () => {
+      return Review.collection.insertMany(reviewMockData)
+        .then(() => ReviewPhoto.collection.insertMany(reviewPhotoMockData))
+        .then(() => queries.getReviews(1, 5, undefined, -1))
+        .then(response => {
+          assert.isArray(response.results);
+          assert.lengthOf(response.results, 0);
         });
     });
 
