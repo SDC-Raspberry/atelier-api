@@ -1,16 +1,21 @@
 const assert = require('chai').assert;
 
-// connect to the test db
 const mongoose = require("mongoose");
 const dbName = "atelier-test";
 
-// define all the schemas
-const personSchema = new mongoose.Schema({
-  name: String,
-  age: Number
-});
+const {
+  Product,
+  Review,
+  ReviewPhoto,
+  CharacteristicReview,
+  Characteristic
+} = require('../server/db/schemas.js');
 
-const Person = new mongoose.model("person", personSchema);
+// Define mock data
+
+const {
+  reviewMockData
+} = require('./_mockData.js');
 
 describe("Query Tests", () => {
   before((done) => {
@@ -23,35 +28,31 @@ describe("Query Tests", () => {
     db.once('open', done);
   });
 
-  // for each query
-  describe('Query A', () => {
-    // before the tests
-    before((done) => {
-      // delete contents of that table
-      const personMockData = [
-        {
-          name: 'Keegan',
-          age: 9,
-        },
-        {
-          name: 'Shany',
-          age: 64,
-        }
-      ];
-
-      Person.deleteMany({})
-        .then(result => Person.collection.insertMany(personMockData))
+  describe('getReviews', () => {
+    beforeEach((done) => {
+      Review.deleteMany({})
         .then(() => done());
     });
 
     // do all the query tests
-    it('should find an entry in the db', () => {
-      const query = Person.find({ name: 'Keegan' });
-      return query.lean().exec()
+    it('should add entries into the db', () => {
+      return Review.collection.insertMany(reviewMockData)
         .then(result => {
-          assert.lengthOf(result, 1);
-          assert.propertyVal(result[0], 'name', 'Keegan');
-          assert.propertyVal(result[0], 'age', 9);
+          const query = Review.find({ product_id : 1 });
+          return query.lean().exec()
+            .then(result => {
+              assert.lengthOf(result, 1);
+              assert.propertyVal(result[0], 'reviewer_name', 'mymainstreammother');
+              assert.propertyVal(result[0], 'reviewer_email', 'first.last@gmail.com');
+            });
+        }).then(result => {
+          const query = Review.find({ product_id : 2 });
+          return query.lean().exec()
+            .then(result => {
+              assert.lengthOf(result, 1);
+              assert.propertyVal(result[0], 'reviewer_name', 'negativity');
+              assert.propertyVal(result[0], 'reviewer_email', 'first.last@gmail.com');
+            });
         });
     });
 
