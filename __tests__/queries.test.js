@@ -20,10 +20,7 @@ describe("Query Tests", () => {
     });
     const db = mongoose.connection;
     db.on('error', console.error.bind(console, 'connection error'));
-    db.once('open', function() {
-      console.log('DB: ' + db.name + ' local: ' + db.host + ':' + db.port);
-      done();
-    });
+    db.once('open', done);
   });
 
   // for each query
@@ -43,10 +40,8 @@ describe("Query Tests", () => {
       ];
 
       Person.deleteMany({})
-        .then(result => {
-          Person.collection.insertMany(personMockData);
-          done();
-        });
+        .then(result => Person.collection.insertMany(personMockData))
+        .then(() => done());
     });
 
     // do all the query tests
