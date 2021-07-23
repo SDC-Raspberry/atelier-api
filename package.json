@@ -4,6 +4,7 @@
   "description": "yeah you know me",
   "main": "index.js",
   "scripts": {
+    "start": "nodemon ./server/server.js",
     "test": "mocha ./__tests__",
     "coverage": "nyc npm run test"
   },
