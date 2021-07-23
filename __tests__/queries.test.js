@@ -54,7 +54,6 @@ describe("Query Tests", () => {
           const results = response.results;
           assert.lengthOf(results, 1);
           assert.propertyVal(results[0], 'reviewer_name', 'Sallie_Kovacek');
-          assert.propertyVal(results[0], 'reviewer_email', 'Magdalen49@yahoo.com');
           assert.isArray(results[0].photos);
           assert.lengthOf(results[0].photos, 1);
           assert.propertyVal(results[0].photos[0], 'id', 13);

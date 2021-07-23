@@ -56,14 +56,19 @@ const getReviews = async (page, count, sort, product_id) => {
   reviewResults.splice(0, offset);
   // Remove mongo default _id field
   reviewResults = reviewResults.map(result => {
+    result.review_id = result.id;
     delete result._id;
+    delete result.id;
+    delete result.product_id;
+    delete result.reported;
+    delete result.reviewer_email;
     return result;
   });
 
   // Create array of executed queries as Promises
   const photoResults = await reviewResults.map(async (result, index) => {
     const photoQuery = ReviewPhoto.find()
-      .where({ review_id: result.id });
+      .where({ review_id: result.review_id });
     return await photoQuery.lean().exec();
   });
 
