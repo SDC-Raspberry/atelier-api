@@ -4,7 +4,7 @@
   "description": "yeah you know me",
   "main": "index.js",
   "scripts": {
-    "test": "jest"
+    "test": "mocha ./__tests__"
   },
   "repository": {
     "type": "git",
@@ -18,7 +18,8 @@
   },
   "homepage": "https://github.com/SDC-Raspberry/milo-sdc#readme",
   "devDependencies": {
-    "jest": "^27.0.6"
+    "chai": "^4.3.4",
+    "mocha": "^9.0.2"
   },
   "dependencies": {
     "axios": "^0.21.1",
