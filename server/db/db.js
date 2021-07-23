@@ -36,4 +36,8 @@ db.once("open", () => {
     .then(result => console.log('characteristics: ' + !!result));
 });
 
+db.disconnect = () => {
+  mongoose.disconnect();
+};
+
 module.exports = db;

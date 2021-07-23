@@ -19,4 +19,9 @@ app.get('/reviews', (req, res) => {
 });
 
 // Start the server
-app.listen(3000, () => console.log('listening on 3000\n'));
+const server = app.listen(3000, () => console.log('listening on 3000\n'));
+
+module.exports = {
+  server,
+  db
+};
