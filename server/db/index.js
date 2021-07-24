@@ -130,12 +130,10 @@ const getReviewsMeta = async (product_id) => {
   };
 
   // Get product reviews
-  console.time('reviews query');
   const reviewsQuery = Review.find({ product_id })
   let reviews;
   await reviewsQuery.lean().exec()
     .then(results => reviews = results);
-  console.timeEnd('reviews query');
 
   const ratingIds = [];
 
@@ -166,7 +164,6 @@ const getReviewsMeta = async (product_id) => {
 
   // Get characteristics
 
-  console.time('characteristicReview query');
   const characteristicReviewResults = ratingIds.map(async (review_id) => {
     const query = CharacteristicReview.find({ review_id });
     return await query.lean().exec();
@@ -208,7 +205,6 @@ const getReviewsMeta = async (product_id) => {
   // Add correctly formatted characteristics to the output
   for (const id in characteristicLookup) {
     const characteristic = characteristicLookup[id];
-    console.log(characteristic.ratings, characteristic.ratings.length);
     const value = characteristic.ratings.reduce(sum, 0) / characteristic.ratings.length;
     output.characteristics[characteristic.name] = {
       id: Number(id),
