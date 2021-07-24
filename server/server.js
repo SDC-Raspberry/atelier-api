@@ -24,7 +24,7 @@ app.get('/reviews/meta', (req, res) => {
     product_id,
   } = req.query;
 
-  db.getReviewsMeta(product_id)
+  queries.getReviewsMeta(product_id)
     .then(result => res.end(JSON.stringify(result)));
 });
 
