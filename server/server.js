@@ -33,21 +33,11 @@ app.get('/reviews/meta', (req, res) => {
 
 // POST /reviews
 app.post('/reviews', (req, res) => {
-  console.log(req.body);
-  const {
-    product_id,
-    rating,
-    summary,
-    body,
-    recommend,
-    name,
-    email,
-    photos,
-    characteristics
-  } = req.body;
-
   queries.postReviews(req.body)
-    .then(result => res.end(JSON.stringify(result)));
+    .then(status => {
+      const message = status === 201 ? "CREATED" : "INTERNAL SERVER ERROR";
+      res.status(status).send(message);
+    });
 });
 
 // PUT /reviews/:review_id/helpful

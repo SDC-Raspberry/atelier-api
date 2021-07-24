@@ -199,7 +199,12 @@ const postReviews = async (reqBody) => {
     characteristics
   } = reqBody;
 
-  return reqBody;
+  // construct input document
+  // insert the document
+    // then send back success
+    // or if error, send back not success
+
+  return 201;
 };
 
 // Export queries
