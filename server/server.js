@@ -1,6 +1,9 @@
 // Initialize Server
 const express = require('express');
 const app = express();
+const bodyParser = require('body-parser');
+
+app.use(bodyParser.json());
 
 const db = require('./db/db.js');
 const queries = require('./db/queries.js');
@@ -30,6 +33,7 @@ app.get('/reviews/meta', (req, res) => {
 
 // POST /reviews
 app.post('/reviews', (req, res) => {
+  console.log(req.body);
   const {
     product_id,
     rating,
@@ -42,7 +46,8 @@ app.post('/reviews', (req, res) => {
     characteristics
   } = req.body;
 
-  // Run the db query
+  queries.postReviews(req.body)
+    .then(result => res.end(JSON.stringify(result)));
 });
 
 // PUT /reviews/:review_id/helpful

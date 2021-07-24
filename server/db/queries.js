@@ -186,9 +186,26 @@ const getReviewsMeta = async (product_id) => {
   return output;
 };
 
+const postReviews = async (reqBody) => {
+  const {
+    product_id,
+    rating,
+    summary,
+    body,
+    recommend,
+    name,
+    email,
+    photos,
+    characteristics
+  } = reqBody;
+
+  return reqBody;
+};
+
 // Export queries
 
 module.exports = {
   getReviews,
-  getReviewsMeta
+  getReviewsMeta,
+  postReviews
 };
