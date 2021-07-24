@@ -62,10 +62,33 @@ describe('Server tests', () => {
           assert.isArray(results[0].photos);
         });
 
-        // after tests
-          // remove inserted reviews by unique id
+      // after tests
+        // remove inserted reviews by unique id
     });
-  })
+  });
+
+  describe('GET /reviews/meta', () => {
+    // before tests
+      // add review and review photo to db
+      // give it a product_id that should not be found in the db
+
+    it('should get the expected shape of data from the query', () => {
+      return axios.get('http://localhost:3000/reviews/meta?product_id=22120')
+        .then(response => {
+          // Whole return
+          assert.isObject(response.data);
+          assert.containsAllKeys(response.data, [
+            "product_id",
+            "ratings",
+            "recommended",
+            "characteristics",
+          ]);
+        });
+
+      // after tests
+        // remove inserted reviews by unique id
+    });
+  });
 
   after((done) => {
     db.disconnect();

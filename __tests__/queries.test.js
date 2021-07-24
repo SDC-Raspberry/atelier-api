@@ -116,7 +116,6 @@ describe("Query Tests", () => {
     it('should collate all characteristics and average their values', () => {
       return queries.getReviewsMeta(12)
         .then(response => {
-          console.log(response);
           assert.containsAllKeys(response.characteristics, [
             "Fit",
             "Length",
