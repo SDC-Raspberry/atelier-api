@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 const dbName = "atelier-test";
 
 const {
+  Counter,
   Product,
   Review,
   ReviewPhoto,
@@ -24,6 +25,31 @@ describe("Query Tests", () => {
     const db = mongoose.connection;
     db.on('error', console.error.bind(console, 'connection error'));
     db.once('open', done);
+  });
+
+  describe('getNextValue', () => {
+    before((done) => {
+      Counter.deleteMany({})
+        .then(() => Counter.insertMany([
+          { _id: 'products', value: 100 },
+          { _id: 'reviews', value: 100 },
+          { _id: 'reviews_photos', value: 100 },
+          { _id: 'characteristics', value: 100 },
+          { _id: 'characteristic_reviews', value: 100 },
+        ]))
+        .then(() => done());
+    });
+
+    it('should increment counters', () => {
+      return Counter.findOne({ _id: 'products' })
+        .then(response => {
+          assert.equal(response.value, 100);
+        })
+        .then(() => queries.getNextValue('products'))
+        .then(response => {
+          assert.equal(response, 101);
+        });
+    });
   });
 
   describe('getReviews', () => {
