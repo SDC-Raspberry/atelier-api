@@ -13,10 +13,7 @@ const {
 
 const queries = require('../server/db/queries.js');
 
-const {
-  reviewMockData,
-  reviewPhotoMockData
-} = require('./_mockData.js');
+const mockData = require('./_mockData.js');
 
 describe("Query Tests", () => {
   before((done) => {
@@ -46,13 +43,13 @@ describe("Query Tests", () => {
         });
     });
 
-    it('should get an entry for a given product_id that includes a photo entry', () => {
-      return Review.collection.insertMany(reviewMockData)
-        .then(() => ReviewPhoto.collection.insertMany(reviewPhotoMockData))
+    it('should get two entries for a given product_id that include photo entries', () => {
+      return Review.collection.insertMany(mockData.review)
+        .then(() => ReviewPhoto.collection.insertMany(mockData.reviewPhoto))
         .then(() => queries.getReviews(1, 5, undefined, 12))
         .then(response => {
           const results = response.results;
-          assert.lengthOf(results, 1);
+          assert.lengthOf(results, 2);
           assert.propertyVal(results[0], 'reviewer_name', 'Sallie_Kovacek');
           assert.isArray(results[0].photos);
           assert.lengthOf(results[0].photos, 1);
@@ -62,18 +59,79 @@ describe("Query Tests", () => {
     });
 
     it('should return an empty array when no entries exist at a given product_id', () => {
-      return Review.collection.insertMany(reviewMockData)
-        .then(() => ReviewPhoto.collection.insertMany(reviewPhotoMockData))
+      return Review.collection.insertMany(mockData.review)
+        .then(() => ReviewPhoto.collection.insertMany(mockData.reviewPhoto))
         .then(() => queries.getReviews(1, 5, undefined, -1))
         .then(response => {
           assert.isArray(response.results);
           assert.lengthOf(response.results, 0);
         });
     });
+  });
 
-    after((done) => {
-      mongoose.disconnect();
-      done();
+  describe('getReviewsMeta', () => {
+    beforeEach((done) => {
+      Review.deleteMany({})
+        .then(() => CharacteristicReview.deleteMany({}))
+        .then(() => Characteristic.deleteMany({}))
+        .then(() => Review.collection.insertMany(mockData.review))
+        .then(() => CharacteristicReview.collection.insertMany(mockData.characteristicReview))
+        .then(() => Characteristic.collection.insertMany(mockData.characteristic))
+        .then(() => done());
     });
+
+    it('should return the meta content for a query', () => {
+      return queries.getReviewsMeta(12345)
+        .then(response => {
+          assert.propertyVal(response, 'product_id', 12345);
+        });
+    });
+
+    it('should get an entry for a given product_id that includes multiple characteristics', () => {
+      return queries.getReviewsMeta(12)
+        .then(response => {
+          assert.isObject(response.ratings);
+          assert.isObject(response.recommended);
+          assert.isObject(response.characteristics);
+          assert.lengthOf(Object.keys(response.characteristics), 4);
+        });
+    });
+
+    it('should collate both ratings into ratings object with one 2 and one 4', () => {
+      return queries.getReviewsMeta(12)
+        .then(response => {
+          assert.propertyVal(response.ratings, "2", 1);
+          assert.propertyVal(response.ratings, "4", 1);
+        });
+    });
+
+    it('should collate both recommend values into recommended object with one 0 and one 1', () => {
+      return queries.getReviewsMeta(12)
+        .then(response => {
+          assert.propertyVal(response.recommended, "0", 1);
+          assert.propertyVal(response.recommended, "1", 1);
+        });
+    });
+
+    it('should collate all characteristics and average their values', () => {
+      return queries.getReviewsMeta(12)
+        .then(response => {
+          assert.containsAllKeys(response.characteristics, [
+            "Fit",
+            "Length",
+            "Comfort",
+            "Quality"
+          ]);
+          assert.equal(response.characteristics["Fit"].value, (2 + 2) / 2);
+          assert.equal(response.characteristics["Length"].value, (2 + 1) / 2);
+          assert.equal(response.characteristics["Comfort"].value, (2 + 4) / 2);
+          assert.equal(response.characteristics["Quality"].value, (4 + 3) / 2);
+        });
+    });
+  });
+
+  after((done) => {
+    mongoose.disconnect();
+    done();
   });
 });

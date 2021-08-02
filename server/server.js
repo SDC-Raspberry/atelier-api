@@ -24,7 +24,8 @@ app.get('/reviews/meta', (req, res) => {
     product_id,
   } = req.query;
 
-  // Run the db query
+  queries.getReviewsMeta(product_id)
+    .then(result => res.end(JSON.stringify(result)));
 });
 
 // POST /reviews
@@ -53,7 +54,7 @@ app.put('/reviews/:review_id/helpful', (req, res) => {
   // Run the db query
 });
 
-// PUT /reviews/:review_id/helpful
+// PUT /reviews/:review_id/report
 app.put('/reviews/:review_id/report', (req, res) => {
   const {
     review_id,
