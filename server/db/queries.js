@@ -212,11 +212,11 @@ const postReviews = async (reqBody) => {
   } = reqBody;
 
   // construct input document
+  // get next id
+  const newId = await getNextValue(Review);
   // insert the document
     // then send back success
     // or if error, send back not success
-
-  return 201;
 };
 
 // Export queries
