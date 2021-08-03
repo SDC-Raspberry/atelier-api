@@ -6,6 +6,11 @@ const noTimestamps = {
   timestamps: false
 };
 
+const counterSchema = new mongoose.Schema({
+  _id: String,
+  value: Number,
+});
+
 const characteristicSchema = new mongoose.Schema({
   id: Number,
   product_id: Number,
@@ -54,6 +59,7 @@ characteristicSchema.index({ id: 1 });
 
 // Create models
 
+const Counter = mongoose.model('counters', counterSchema);
 const Product = mongoose.model("products", productSchema);
 const Review = mongoose.model("reviews", reviewSchema);
 const ReviewPhoto = mongoose.model("reviews_photos", reviewPhotoSchema);
@@ -61,6 +67,7 @@ const CharacteristicReview = mongoose.model("characteristic_reviews", characteri
 const Characteristic = mongoose.model("characteristics", characteristicSchema);
 
 module.exports = {
+  Counter,
   Product,
   Review,
   ReviewPhoto,

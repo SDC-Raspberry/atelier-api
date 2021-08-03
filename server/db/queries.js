@@ -1,4 +1,5 @@
 const {
+  Counter,
   Product,
   Review,
   ReviewPhoto,
@@ -7,6 +8,17 @@ const {
 } = require('./schemas.js');
 
 // Helper functions
+
+const getNextValue = async (collectionName) => {
+  // increment value in collection
+  const response = await Counter.findByIdAndUpdate(
+    collectionName,
+    { $inc: { value: 1 } },
+    { new: true }
+  ).exec();
+  // return that incremented value
+  return response.value
+};
 
 const newestCompare = (a, b) => {
   // Assuming UNIX timestamp
@@ -210,6 +222,7 @@ const postReviews = async (reqBody) => {
 // Export queries
 
 module.exports = {
+  getNextValue,
   getReviews,
   getReviewsMeta,
   postReviews
