@@ -12,6 +12,8 @@ const {
 const STATUS = {
   OK: 200,
   CREATED: 201,
+  NO_CONTENT: 204,
+  INVALID: 400,
   ERROR: 500,
 };
 
@@ -269,11 +271,30 @@ const postReview = async (reqBody) => {
     });
 };
 
+const putReviewHelpful = async (review_id) => {
+  review_id = Number(review_id);
+  if (isNaN(review_id)) {
+    return await STATUS.INVALID;
+  }
+
+  return Review.findOneAndUpdate(
+    { id: review_id },
+    { $inc: { helpfulness: 1 } },
+    { new: true }
+  ).exec()
+    .then(() => STATUS.NO_CONTENT)
+    .catch(error => {
+      console.error(error);
+      return STATUS.ERROR;
+    });
+}
+
 // Export queries
 
 module.exports = {
   getNextValue,
   getReviews,
   getReviewsMeta,
-  postReview
+  postReview,
+  putReviewHelpful
 };

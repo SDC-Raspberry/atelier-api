@@ -256,14 +256,14 @@ describe("Query Tests", () => {
           return query.lean().exec();
         })
         .then(result => {
-          assert.propertyVal(review, 'helpfulness', 3);
+          assert.propertyVal(result, 'helpfulness', 3);
         });
     });
 
     it('should return 400 if nothing or bad review_id provided', () => {
       return queries.putReviewHelpful()
         .then(status => assert.equal(status, 400))
-        .then(() => queries.putReviewHelpful(''))
+        .then(() => queries.putReviewHelpful('bad'))
         .then(status => assert.equal(status, 400));
     });
   });
