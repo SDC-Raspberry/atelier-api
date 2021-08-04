@@ -33,7 +33,7 @@ app.get('/reviews/meta', (req, res) => {
 
 // POST /reviews
 app.post('/reviews', (req, res) => {
-  queries.postReviews(req.body)
+  queries.postReview(req.body)
     .then(status => {
       const message = status === 201 ? "CREATED" : "INTERNAL SERVER ERROR";
       res.status(status).send(message);
