@@ -62,11 +62,6 @@ describe("Query Tests", () => {
           assert.equal(response, 101);
         });
     });
-
-    after((done) => {
-      Counter.deleteMany({})
-        .then(() => done());
-    });
   });
 
   describe('getReviews', () => {
@@ -109,12 +104,6 @@ describe("Query Tests", () => {
           assert.isArray(response.results);
           assert.lengthOf(response.results, 0);
         });
-    });
-
-    after((done) => {
-      Review.deleteMany({})
-        .then(() => ReviewPhoto.deleteMany({}))
-        .then(() => done());
     });
   });
 
@@ -176,13 +165,6 @@ describe("Query Tests", () => {
           assert.equal(response.characteristics["Comfort"].value, (2 + 4) / 2);
           assert.equal(response.characteristics["Quality"].value, (4 + 3) / 2);
         });
-    });
-
-    after((done) => {
-      Review.deleteMany({})
-        .then(() => CharacteristicReview.deleteMany({}))
-        .then(() => Characteristic.deleteMany({}))
-        .then(() => done());
     });
   });
 
@@ -255,13 +237,34 @@ describe("Query Tests", () => {
           assert.propertyVal(secondResult, 'value', 4);
         });
     });
+  });
 
-    after((done) => {
+  describe('putReviewHelpful', () => {
+    beforeEach((done) => {
       Review.deleteMany({})
-        .then(() => ReviewPhoto.deleteMany({}))
-        .then(() => CharacteristicReview.deleteMany({}))
-        .then(() => Characteristic.deleteMany({}))
+        .then(() => Review.insertMany(mockData.review))
         .then(() => done());
+    });
+
+    it('should increment helpful number for selected review', () => {
+      return Review.findOne({ id: 2 })
+        .then(review => assert.propertyVal(review, 'helpfulness', 2))
+        .then(() => queries.putReviewHelpful('2'))
+        .then(status => assert.equal(status, 204))
+        .then(() => {
+          const query = Review.findOne({ id: 2 });
+          return query.lean().exec();
+        })
+        .then(result => {
+          assert.propertyVal(review, 'helpfulness', 3);
+        });
+    });
+
+    it('should return 400 if nothing or bad review_id provided', () => {
+      return queries.putReviewHelpful()
+        .then(status => assert.equal(status, 400))
+        .then(() => queries.putReviewHelpful(''))
+        .then(status => assert.equal(status, 400));
     });
   });
 
