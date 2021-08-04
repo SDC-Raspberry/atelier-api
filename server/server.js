@@ -60,10 +60,10 @@ app.put('/reviews/:review_id/report', (req, res) => {
   } = req.body;
 
   queries.putReviewReport(review_id)
-  .then(status => {
-    const message = status === 204 ? "NO CONTENT" : "INTERNAL SERVER ERROR";
-    res.status(status).send(message);
-  });
+    .then(status => {
+      const message = status === 204 ? "NO CONTENT" : "INTERNAL SERVER ERROR";
+      res.status(status).send(message);
+    });
 });
 
 // Start the server

@@ -63,11 +63,11 @@ module.exports = {
       "_id": "60f2669cdd17092b96621d71",
       "id": 20,
       "product_id": 12,
-      "rating": 2,
+      "rating": 4,
       "date": 1599292503876,
       "summary": "Natus est in facilis ea accusantium exercitationem sunt.",
       "body": "Asperiores voluptates omnis nam tempore et est ea et fugit. Non aut tempore sint sit. Aspernatur eius accusamus sit repellendus velit. Consequatur harum corporis.",
-      "recommend": false,
+      "recommend": true,
       "reported": false,
       "reviewer_name": "Sallie_Kovacek",
       "reviewer_email": "Magdalen49@yahoo.com",
@@ -88,6 +88,21 @@ module.exports = {
       "reviewer_email": "Dolly.Muller75@hotmail.com",
       "response": null,
       "helpfulness": 12
+    },
+    {
+      "_id": "60fad51d93cd1365f0ae7cad",
+      "id": 19,
+      "product_id": 12,
+      "rating": 2,
+      "date": 1591265584988,
+      "summary": "Delectus molestiae qui laborum possimus veritatis.",
+      "body": "Et deserunt modi et perferendis unde impedit perferendis. Vel occaecati minus sunt inventore atque. Officia ratione vel ut laudantium eaque natus ut odio. Maxime voluptates vitae accusantium iure laborum ducimus sunt maiores nulla. Autem deserunt cumque doloremque rem fugiat.",
+      "recommend": false,
+      "reported": false,
+      "reviewer_name": "Kip.Streich",
+      "reviewer_email": "Kristy_Schiller@gmail.com",
+      "response": null,
+      "helpfulness": 13
     }
   ],
   reviewPhoto: [

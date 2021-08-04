@@ -68,6 +68,8 @@ describe("Query Tests", () => {
     beforeEach((done) => {
       Review.deleteMany({})
         .then(() => ReviewPhoto.deleteMany({}))
+        .then(() => Review.insertMany(mockData.review))
+        .then(() => ReviewPhoto.insertMany(mockData.reviewPhoto))
         .then(() => done());
     });
 
@@ -81,13 +83,11 @@ describe("Query Tests", () => {
         });
     });
 
-    it('should get two entries for a given product_id that include photo entries', () => {
-      return Review.collection.insertMany(mockData.review)
-        .then(() => ReviewPhoto.collection.insertMany(mockData.reviewPhoto))
-        .then(() => queries.getReviews(1, 5, undefined, 12))
+    it('should get entries for a given product_id that include photo entries', () => {
+      return queries.getReviews('1', '5', undefined, '12')
         .then(response => {
           const results = response.results;
-          assert.lengthOf(results, 2);
+          assert.lengthOf(results, 3);
           assert.propertyVal(results[0], 'reviewer_name', 'Sallie_Kovacek');
           assert.isArray(results[0].photos);
           assert.lengthOf(results[0].photos, 1);
@@ -96,10 +96,41 @@ describe("Query Tests", () => {
         });
     });
 
+    it('should organize entries by newest', () => {
+      return queries.getReviews('1', '5', 'newest', '12')
+        .then(response => {
+          const results = response.results;
+          assert.lengthOf(results, 3);
+          assert.propertyVal(results[0], 'reviewer_name', 'Curtis_King46');
+          assert.propertyVal(results[1], 'reviewer_name', 'Sallie_Kovacek');
+          assert.propertyVal(results[2], 'reviewer_name', 'Kip.Streich');
+        });
+    });
+
+    it('should organize entries by helpful', () => {
+      return queries.getReviews('1', '5', 'helpful', '12')
+        .then(response => {
+          const results = response.results;
+          assert.lengthOf(results, 3);
+          assert.propertyVal(results[0], 'reviewer_name', 'Kip.Streich');
+          assert.propertyVal(results[1], 'reviewer_name', 'Curtis_King46');
+          assert.propertyVal(results[2], 'reviewer_name', 'Sallie_Kovacek');
+        });
+    });
+
+    it('should organize entries by relevant', () => {
+      return queries.getReviews('1', '5', 'relevant', '12')
+        .then(response => {
+          const results = response.results;
+          assert.lengthOf(results, 3);
+          assert.propertyVal(results[0], 'reviewer_name', 'Kip.Streich');
+          assert.propertyVal(results[1], 'reviewer_name', 'Curtis_King46');
+          assert.propertyVal(results[2], 'reviewer_name', 'Sallie_Kovacek');
+        });
+    });
+
     it('should return an empty array when no entries exist at a given product_id', () => {
-      return Review.collection.insertMany(mockData.review)
-        .then(() => ReviewPhoto.collection.insertMany(mockData.reviewPhoto))
-        .then(() => queries.getReviews(1, 5, undefined, -1))
+      return queries.getReviews('1', '5', undefined, '0')
         .then(response => {
           assert.isArray(response.results);
           assert.lengthOf(response.results, 0);
@@ -135,19 +166,19 @@ describe("Query Tests", () => {
         });
     });
 
-    it('should collate both ratings into ratings object with one 2 and one 4', () => {
+    it('should collate ratings into ratings object', () => {
       return queries.getReviewsMeta(12)
         .then(response => {
+          assert.propertyVal(response.ratings, "4", 2);
           assert.propertyVal(response.ratings, "2", 1);
-          assert.propertyVal(response.ratings, "4", 1);
         });
     });
 
-    it('should collate both recommend values into recommended object with one 0 and one 1', () => {
+    it('should collate recommend values into recommended object', () => {
       return queries.getReviewsMeta(12)
         .then(response => {
+          assert.propertyVal(response.recommended, "1", 2);
           assert.propertyVal(response.recommended, "0", 1);
-          assert.propertyVal(response.recommended, "1", 1);
         });
     });
 

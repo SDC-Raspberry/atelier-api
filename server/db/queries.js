@@ -32,16 +32,16 @@ const getCurrentUnixTimestamp = () => Math.floor(new Date().getTime() / 1000);
 
 const newestCompare = (a, b) => {
   // Assuming UNIX timestamp
-  return a.date - b.date;
+  return b.date - a.date;
 }
 
 const helpfulCompare = (a, b) => {
-  return a.helpfulness - b.helpfulness;
+  return b.helpfulness - a.helpfulness;
 }
 
 const relevantCompare = (a, b) => {
   // Still don't know what this does. WIll set as helpfulness for now
-  return a.helpfulness - b.helpfulness;
+  return b.helpfulness - a.helpfulness;
 }
 
 const sum = (acc, value) => acc + value;
@@ -143,7 +143,7 @@ const getReviewsMeta = async (product_id) => {
 
     // Add recommendation
     let recommend;
-    if (review.recommend === true) {
+    if (review.recommend) {
       recommend = 1;
     } else {
       recommend = 0;
