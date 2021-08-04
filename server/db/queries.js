@@ -287,7 +287,25 @@ const putReviewHelpful = async (review_id) => {
       console.error(error);
       return STATUS.ERROR;
     });
-}
+};
+
+const putReviewReport = async (review_id) => {
+  review_id = Number(review_id);
+  if (isNaN(review_id)) {
+    return await STATUS.INVALID;
+  }
+
+  return Review.findOneAndUpdate(
+    { id: review_id },
+    { reported: true },
+    { new: true }
+  ).exec()
+    .then(() => STATUS.NO_CONTENT)
+    .catch(error => {
+      console.error(error);
+      return STATUS.ERROR;
+    });
+};
 
 // Export queries
 
@@ -296,5 +314,6 @@ module.exports = {
   getReviews,
   getReviewsMeta,
   postReview,
-  putReviewHelpful
+  putReviewHelpful,
+  putReviewReport,
 };

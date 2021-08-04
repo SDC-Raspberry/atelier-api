@@ -285,21 +285,21 @@ describe("Query Tests", () => {
           return query.lean().exec();
         })
         .then(result => {
-          assert.propertyVal(review, 'reported', false);
+          assert.propertyVal(result, 'reported', true);
         });
     });
 
     it('should not change reported boolean if true for selected review', () => {
-      return Review.findOne({ id: 2 })
-        .then(review => assert.propertyVal(review, 'reported', false))
-        .then(() => queries.putReviewReport('2'))
+      return Review.findOne({ id: 18 })
+        .then(review => assert.propertyVal(review, 'reported', true))
+        .then(() => queries.putReviewReport('18'))
         .then(status => assert.equal(status, 204))
         .then(() => {
-          const query = Review.findOne({ id: 2 });
+          const query = Review.findOne({ id: 18 });
           return query.lean().exec();
         })
         .then(result => {
-          assert.propertyVal(review, 'reported', false);
+          assert.propertyVal(result, 'reported', true);
         });
     });
 
