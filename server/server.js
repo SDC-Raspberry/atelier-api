@@ -18,7 +18,10 @@ app.get('/reviews', (req, res) => {
   } = req.query;
 
   queries.getReviews(page, count, sort, product_id)
-    .then(result => res.end(JSON.stringify(result)));
+    .then(response => {
+      res.status(response.status).end(JSON.stringify(response.data));
+    })
+    .catch(error => res.status(500));
 });
 
 // GET /reviews/meta
@@ -28,16 +31,19 @@ app.get('/reviews/meta', (req, res) => {
   } = req.query;
 
   queries.getReviewsMeta(product_id)
-    .then(result => res.end(JSON.stringify(result)));
+    .then(response => {
+      res.status(response.status).end(JSON.stringify(response.data));
+    })
+    .catch(error => res.status(500).message());
 });
 
 // POST /reviews
 app.post('/reviews', (req, res) => {
   queries.postReview(req.body)
-    .then(status => {
-      const message = status === 201 ? "CREATED" : "INTERNAL SERVER ERROR";
-      res.status(status).send(message);
-    });
+    .then(response => {
+      res.status(response.status).send(JSON.stringify(response.message));
+    })
+    .catch(error => res.status(500));
 });
 
 // PUT /reviews/:review_id/helpful

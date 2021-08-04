@@ -76,17 +76,20 @@ describe("Query Tests", () => {
     it('should return the meta content for a query', () => {
       return queries.getReviews(1, 5, undefined, 12345)
         .then(response => {
-          assert.propertyVal(response, 'product', 12345);
-          assert.propertyVal(response, 'page', 1);
-          assert.propertyVal(response, 'count', 5);
-          assert.exists(response.results);
+          assert.propertyVal(response, 'status', 200);
+          assert.propertyVal(response, 'message', 'OK');
+          const data = response.data;
+          assert.propertyVal(data, 'product', 12345);
+          assert.propertyVal(data, 'page', 1);
+          assert.propertyVal(data, 'count', 5);
+          assert.exists(data.results);
         });
     });
 
     it('should get entries for a given product_id that include photo entries', () => {
       return queries.getReviews('1', '5', undefined, '12')
         .then(response => {
-          const results = response.results;
+          const results = response.data.results;
           assert.lengthOf(results, 3);
           assert.propertyVal(results[0], 'reviewer_name', 'Sallie_Kovacek');
           assert.isArray(results[0].photos);
@@ -99,7 +102,7 @@ describe("Query Tests", () => {
     it('should organize entries by newest', () => {
       return queries.getReviews('1', '5', 'newest', '12')
         .then(response => {
-          const results = response.results;
+          const results = response.data.results;
           assert.lengthOf(results, 3);
           assert.propertyVal(results[0], 'reviewer_name', 'Curtis_King46');
           assert.propertyVal(results[1], 'reviewer_name', 'Sallie_Kovacek');
@@ -110,7 +113,7 @@ describe("Query Tests", () => {
     it('should organize entries by helpful', () => {
       return queries.getReviews('1', '5', 'helpful', '12')
         .then(response => {
-          const results = response.results;
+          const results = response.data.results;
           assert.lengthOf(results, 3);
           assert.propertyVal(results[0], 'reviewer_name', 'Kip.Streich');
           assert.propertyVal(results[1], 'reviewer_name', 'Curtis_King46');
@@ -121,7 +124,7 @@ describe("Query Tests", () => {
     it('should organize entries by relevant', () => {
       return queries.getReviews('1', '5', 'relevant', '12')
         .then(response => {
-          const results = response.results;
+          const results = response.data.results;
           assert.lengthOf(results, 3);
           assert.propertyVal(results[0], 'reviewer_name', 'Kip.Streich');
           assert.propertyVal(results[1], 'reviewer_name', 'Curtis_King46');
@@ -132,8 +135,8 @@ describe("Query Tests", () => {
     it('should return an empty array when no entries exist at a given product_id', () => {
       return queries.getReviews('1', '5', undefined, '0')
         .then(response => {
-          assert.isArray(response.results);
-          assert.lengthOf(response.results, 0);
+          assert.isArray(response.data.results);
+          assert.lengthOf(response.data.results, 0);
         });
     });
   });
@@ -152,49 +155,55 @@ describe("Query Tests", () => {
     it('should return the meta content for a query', () => {
       return queries.getReviewsMeta(12345)
         .then(response => {
-          assert.propertyVal(response, 'product_id', 12345);
+          assert.propertyVal(response, 'status', 200);
+          assert.propertyVal(response, 'message', 'OK');
+          assert.exists(response.data);
         });
     });
 
     it('should get an entry for a given product_id that includes multiple characteristics', () => {
       return queries.getReviewsMeta(12)
         .then(response => {
-          assert.isObject(response.ratings);
-          assert.isObject(response.recommended);
-          assert.isObject(response.characteristics);
-          assert.lengthOf(Object.keys(response.characteristics), 4);
+          const data = response.data;
+          assert.isObject(data.ratings);
+          assert.isObject(data.recommended);
+          assert.isObject(data.characteristics);
+          assert.lengthOf(Object.keys(data.characteristics), 4);
         });
     });
 
     it('should collate ratings into ratings object', () => {
       return queries.getReviewsMeta(12)
         .then(response => {
-          assert.propertyVal(response.ratings, "4", 2);
-          assert.propertyVal(response.ratings, "2", 1);
+          const data = response.data;
+          assert.propertyVal(data.ratings, "4", 2);
+          assert.propertyVal(data.ratings, "2", 1);
         });
     });
 
     it('should collate recommend values into recommended object', () => {
       return queries.getReviewsMeta(12)
         .then(response => {
-          assert.propertyVal(response.recommended, "1", 2);
-          assert.propertyVal(response.recommended, "0", 1);
+          const data = response.data;
+          assert.propertyVal(data.recommended, "1", 2);
+          assert.propertyVal(data.recommended, "0", 1);
         });
     });
 
     it('should collate all characteristics and average their values', () => {
       return queries.getReviewsMeta(12)
         .then(response => {
-          assert.containsAllKeys(response.characteristics, [
+          const data = response.data;
+          assert.containsAllKeys(data.characteristics, [
             "Fit",
             "Length",
             "Comfort",
             "Quality"
           ]);
-          assert.equal(response.characteristics["Fit"].value, (2 + 2) / 2);
-          assert.equal(response.characteristics["Length"].value, (2 + 1) / 2);
-          assert.equal(response.characteristics["Comfort"].value, (2 + 4) / 2);
-          assert.equal(response.characteristics["Quality"].value, (4 + 3) / 2);
+          assert.equal(data.characteristics["Fit"].value, (2 + 2) / 2);
+          assert.equal(data.characteristics["Length"].value, (2 + 1) / 2);
+          assert.equal(data.characteristics["Comfort"].value, (2 + 4) / 2);
+          assert.equal(data.characteristics["Quality"].value, (4 + 3) / 2);
         });
     });
   });
@@ -226,7 +235,10 @@ describe("Query Tests", () => {
           "42": 4,
           "41": 2
         },
-      }).then(status => assert.equal(status, 200))
+      }).then(response => {
+          assert.propertyVal(response, 'status', 201);
+          assert.propertyVal(response, 'message', 'CREATED');
+        })
         .then(() => {
           const query = Review.findOne().sort({ id: -1 });
           return query.lean().exec();
@@ -281,7 +293,10 @@ describe("Query Tests", () => {
       return Review.findOne({ id: 2 })
         .then(review => assert.propertyVal(review, 'helpfulness', 2))
         .then(() => queries.putReviewHelpful('2'))
-        .then(status => assert.equal(status, 204))
+        .then(response => {
+          assert.propertyVal(response, 'status', 204);
+          assert.propertyVal(response, 'message', 'NO CONTENT');
+        })
         .then(() => {
           const query = Review.findOne({ id: 2 });
           return query.lean().exec();
@@ -310,7 +325,10 @@ describe("Query Tests", () => {
       return Review.findOne({ id: 2 })
         .then(review => assert.propertyVal(review, 'reported', false))
         .then(() => queries.putReviewReport('2'))
-        .then(status => assert.equal(status, 204))
+        .then(response => {
+          assert.propertyVal(response, 'status', 204);
+          assert.propertyVal(response, 'message', 'NO CONTENT');
+        })
         .then(() => {
           const query = Review.findOne({ id: 2 });
           return query.lean().exec();
@@ -324,7 +342,6 @@ describe("Query Tests", () => {
       return Review.findOne({ id: 18 })
         .then(review => assert.propertyVal(review, 'reported', true))
         .then(() => queries.putReviewReport('18'))
-        .then(status => assert.equal(status, 204))
         .then(() => {
           const query = Review.findOne({ id: 18 });
           return query.lean().exec();

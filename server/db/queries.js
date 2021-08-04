@@ -17,15 +17,28 @@ const STATUS = {
   ERROR: 500,
 };
 
+const MESSAGE = {
+  OK: 'OK',
+  CREATED: 'CREATED',
+  NO_CONTENT: 'NO CONTENT',
+  INVALID: 'INVALID',
+  ERROR: 'ERROR',
+}
+
 const getNextValue = async (collectionName) => {
-  // increment value in collection
-  const response = await Counter.findByIdAndUpdate(
-    collectionName,
-    { $inc: { value: 1 } },
-    { new: true }
-  ).exec();
-  // return that incremented value
-  return response.value
+  try {
+    // increment value in collection
+    const response = await Counter.findByIdAndUpdate(
+      collectionName,
+      { $inc: { value: 1 } },
+      { new: true }
+    ).exec();
+    // return that incremented value
+    return response.value;
+  } catch (error) {
+    console.error(error);
+    return STATUS.ERROR;
+  }
 };
 
 const getCurrentUnixTimestamp = () => Math.floor(new Date().getTime() / 1000);
@@ -111,10 +124,17 @@ const getReviews = async (page, count, sort, product_id) => {
 
     output.results = reviewResults;
 
-    return output;
+    return {
+      status: STATUS.OK,
+      message: MESSAGE.OK,
+      data: output,
+    };
   } catch (error) {
     console.error(error);
-    return STATUS.ERROR;
+    return {
+      status: STATUS.ERROR,
+      message: MESSAGE.ERROR,
+    }
   }
 };
 
@@ -211,10 +231,17 @@ const getReviewsMeta = async (product_id) => {
       };
     }
 
-    return output;
+    return {
+      status: STATUS.OK,
+      message: MESSAGE.OK,
+      data: output,
+    };
   } catch (error) {
     console.error(error);
-    return STATUS.ERROR;
+    return {
+      status: STATUS.ERROR,
+      message: MESSAGE.ERROR,
+    }
   }
 };
 
@@ -272,10 +299,16 @@ const postReview = async (reqBody) => {
     await Review.create(newReview);
     await ReviewPhoto.insertMany(newReviewPhotos);
     await CharacteristicReview.insertMany(newCharacteristicReviews);
-    return STATUS.OK;
+    return {
+      status: STATUS.CREATED,
+      message: MESSAGE.CREATED,
+    };
   } catch (error) {
     console.error(error);
-    return STATUS.ERROR;
+    return {
+      status: STATUS.ERROR,
+      message: MESSAGE.ERROR,
+    };
   }
 };
 
@@ -291,10 +324,16 @@ const putReviewHelpful = async (review_id) => {
       { $inc: { helpfulness: 1 } },
       { new: true }
     ).exec();
-    return STATUS.NO_CONTENT;
+    return {
+      status: STATUS.NO_CONTENT,
+      message: MESSAGE.NO_CONTENT,
+    };
   } catch (error) {
     console.error(error);
-    return STATUS.ERROR;
+    return {
+      status: STATUS.ERROR,
+      message: MESSAGE.ERROR,
+    }
   }
 };
 
@@ -310,10 +349,16 @@ const putReviewReport = async (review_id) => {
       { reported: true },
       { new: true }
     ).exec();
-    return STATUS.NO_CONTENT;
+    return {
+      status: STATUS.NO_CONTENT,
+      message: MESSAGE.NO_CONTENT,
+    };
   } catch (error) {
     console.error(error);
-    return STATUS.ERROR;
+    return {
+      status: STATUS.ERROR,
+      message: MESSAGE.ERROR,
+    }
   }
 };
 
