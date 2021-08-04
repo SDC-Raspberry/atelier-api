@@ -67,7 +67,7 @@ module.exports = {
       "date": 1599292503876,
       "summary": "Natus est in facilis ea accusantium exercitationem sunt.",
       "body": "Asperiores voluptates omnis nam tempore et est ea et fugit. Non aut tempore sint sit. Aspernatur eius accusamus sit repellendus velit. Consequatur harum corporis.",
-      "recommend": true,
+      "recommend": false,
       "reported": false,
       "reviewer_name": "Sallie_Kovacek",
       "reviewer_email": "Magdalen49@yahoo.com",
@@ -82,11 +82,11 @@ module.exports = {
       "date": 1605292482741,
       "summary": "Eligendi quae nihil nihil qui dolor ut.",
       "body": "Ullam nihil consequatur in magnam. Maiores vero quisquam facere dolorum eos est veritatis in id. Necessitatibus quos aut molestiae quia. Quae unde beatae.",
-      "recommend": "true",
-      "reported": "false",
+      "recommend": true,
+      "reported": true,
       "reviewer_name": "Curtis_King46",
       "reviewer_email": "Dolly.Muller75@hotmail.com",
-      "response": "null",
+      "response": null,
       "helpfulness": 12
     }
   ],

@@ -268,6 +268,49 @@ describe("Query Tests", () => {
     });
   });
 
+  describe('putReviewReport', () => {
+    beforeEach((done) => {
+      Review.deleteMany({})
+        .then(() => Review.insertMany(mockData.review))
+        .then(() => done());
+    });
+
+    it('should set reported boolean to true for selected review', () => {
+      return Review.findOne({ id: 2 })
+        .then(review => assert.propertyVal(review, 'reported', false))
+        .then(() => queries.putReviewReport('2'))
+        .then(status => assert.equal(status, 204))
+        .then(() => {
+          const query = Review.findOne({ id: 2 });
+          return query.lean().exec();
+        })
+        .then(result => {
+          assert.propertyVal(review, 'reported', false);
+        });
+    });
+
+    it('should not change reported boolean if true for selected review', () => {
+      return Review.findOne({ id: 2 })
+        .then(review => assert.propertyVal(review, 'reported', false))
+        .then(() => queries.putReviewReport('2'))
+        .then(status => assert.equal(status, 204))
+        .then(() => {
+          const query = Review.findOne({ id: 2 });
+          return query.lean().exec();
+        })
+        .then(result => {
+          assert.propertyVal(review, 'reported', false);
+        });
+    });
+
+    it('should return 400 if nothing or bad review_id provided', () => {
+      return queries.putReviewReport()
+        .then(status => assert.equal(status, 400))
+        .then(() => queries.putReviewReport('bad'))
+        .then(status => assert.equal(status, 400));
+    });
+  });
+
   after((done) => {
     mongoose.disconnect();
     done();
