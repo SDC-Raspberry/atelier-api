@@ -1,4 +1,33 @@
 module.exports = {
+  product: [
+    {
+      "_id": "60f269e74e488711cd4f6fb0",
+      "id": 1,
+      "name": "Camo Onesie",
+      "slogan": "Blend in to your crowd",
+      "description": "The So Fatigues will wake you up and fit you in. This high energy camo will have you blending in to even the wildest surroundings.",
+      "category": "Jackets",
+      "default_price": 140
+    },
+    {
+      "_id": "60f269e74e488711cd4f6fae",
+      "id": 2,
+      "name": "Bright Future Sunglasses",
+      "slogan": "You've got to wear shades",
+      "description": "Where you're going you might not need roads, but you definitely need some shades. Give those baby blues a rest and let the future shine bright on these timeless lenses.",
+      "category": "Accessories",
+      "default_price": 69
+    },
+    {
+      "_id": "60f269e74e488711cd4f6fb7",
+      "id": 12,
+      "name": "Belle Shirt",
+      "slogan": "Debitis eos est provident ducimus similique saepe quo eos.",
+      "description": "Qui nesciunt nesciunt consequuntur. Quia ut incidunt et quam sit rerum tempora. Placeat ipsa facere corporis et et quia repudiandae consequatur consequatur. Temporibus quae sapiente quae sed. Quisquam consequatur soluta.",
+      "category": "Shirt",
+      "default_price": 570
+    },
+  ],
   review: [
     {
       "_id": "60f2669cdd17092b96621d5e",

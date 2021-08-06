@@ -27,6 +27,18 @@ describe("Query Tests", () => {
     db.once('open', done);
   });
 
+  beforeEach((done) => {
+    Counter.deleteMany({})
+      .then(() => Counter.insertMany([
+        { _id: 'products', value: 100 },
+        { _id: 'reviews', value: 100 },
+        { _id: 'reviews_photos', value: 100 },
+        { _id: 'characteristics', value: 100 },
+        { _id: 'characteristic_reviews', value: 100 },
+      ]))
+      .then(() => done());
+  });
+
   describe('getNextValue', () => {
     before((done) => {
       Counter.deleteMany({})
@@ -49,6 +61,11 @@ describe("Query Tests", () => {
         .then(response => {
           assert.equal(response, 101);
         });
+    });
+
+    after((done) => {
+      Counter.deleteMany({})
+        .then(() => done());
     });
   });
 
@@ -92,6 +109,12 @@ describe("Query Tests", () => {
           assert.isArray(response.results);
           assert.lengthOf(response.results, 0);
         });
+    });
+
+    after((done) => {
+      Review.deleteMany({})
+        .then(() => ReviewPhoto.deleteMany({}))
+        .then(() => done());
     });
   });
 
@@ -153,6 +176,92 @@ describe("Query Tests", () => {
           assert.equal(response.characteristics["Comfort"].value, (2 + 4) / 2);
           assert.equal(response.characteristics["Quality"].value, (4 + 3) / 2);
         });
+    });
+
+    after((done) => {
+      Review.deleteMany({})
+        .then(() => CharacteristicReview.deleteMany({}))
+        .then(() => Characteristic.deleteMany({}))
+        .then(() => done());
+    });
+  });
+
+  describe('postReview', () => {
+    beforeEach((done) => {
+      Review.deleteMany({})
+        .then(() => ReviewPhoto.deleteMany({}))
+        .then(() => CharacteristicReview.deleteMany({}))
+        .then(() => Characteristic.deleteMany({}))
+        .then(() => Review.insertMany(mockData.review))
+        .then(() => ReviewPhoto.insertMany(mockData.reviewPhoto))
+        .then(() => Characteristic.insertMany(mockData.characteristic))
+        .then(() => CharacteristicReview.insertMany(mockData.characteristicReview))
+        .then(() => done());
+    });
+
+    it('should insert a single review', async () => {
+      return queries.postReview({
+        product_id: 12,
+        rating: 4,
+        summary: "I am liking these glasses",
+        body: "They are very dark. But that's good because I'm in erysunny spots",
+        recommend: false,
+        name: "Mister Twister",
+        email: "mister@twister.com",
+        photos: ["google.com"],
+        characteristics: {
+          "42": 4,
+          "41": 2
+        },
+      }).then(status => assert.equal(status, 200))
+        .then(() => {
+          const query = Review.findOne().sort({ id: -1 });
+          return query.lean().exec();
+        })
+        .then(result => {
+          assert.propertyVal(result, 'id', 101);
+          assert.propertyVal(result, 'product_id', 12);
+          assert.propertyVal(result, 'rating', 4);
+          assert.propertyVal(result, 'summary', 'I am liking these glasses');
+          assert.propertyVal(result, 'body', 'They are very dark. But that\'s good because I\'m in erysunny spots');
+          assert.propertyVal(result, 'recommend', false);
+          assert.propertyVal(result, 'reviewer_name', 'Mister Twister');
+          assert.propertyVal(result, 'reviewer_email', 'mister@twister.com');
+        })
+        .then(() => {
+          const query = ReviewPhoto.findOne().sort({ id: -1 });
+          return query.lean().exec();
+        })
+        .then(result => {
+          assert.propertyVal(result, 'id', 101);
+          assert.propertyVal(result, 'review_id', 101);
+          assert.propertyVal(result, 'url', 'google.com');
+        })
+        .then(() => {
+          const query = CharacteristicReview.find().sort({ id: -1 }).limit(2);
+          return query.lean().exec();
+        })
+        .then(result => {
+          result.sort((a, b) => a.characteristic_id - b.characteristic_id);
+          const firstResult = result[0];
+          assert.propertyVal(firstResult, 'id', 101);
+          assert.propertyVal(firstResult, 'characteristic_id', 41);
+          assert.propertyVal(firstResult, 'review_id', 101);
+          assert.propertyVal(firstResult, 'value', 2);
+          const secondResult = result[1];
+          assert.propertyVal(secondResult, 'id', 102);
+          assert.propertyVal(secondResult, 'characteristic_id', 42);
+          assert.propertyVal(secondResult, 'review_id', 101);
+          assert.propertyVal(secondResult, 'value', 4);
+        });
+    });
+
+    after((done) => {
+      Review.deleteMany({})
+        .then(() => ReviewPhoto.deleteMany({}))
+        .then(() => CharacteristicReview.deleteMany({}))
+        .then(() => Characteristic.deleteMany({}))
+        .then(() => done());
     });
   });
 

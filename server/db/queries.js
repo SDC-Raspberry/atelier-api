@@ -9,6 +9,12 @@ const {
 
 // Helper functions
 
+const STATUS = {
+  OK: 200,
+  CREATED: 201,
+  ERROR: 500,
+};
+
 const getNextValue = async (collectionName) => {
   // increment value in collection
   const response = await Counter.findByIdAndUpdate(
@@ -19,6 +25,8 @@ const getNextValue = async (collectionName) => {
   // return that incremented value
   return response.value
 };
+
+const getCurrentUnixTimestamp = () => Math.floor(new Date().getTime() / 1000);
 
 const newestCompare = (a, b) => {
   // Assuming UNIX timestamp
@@ -198,10 +206,74 @@ const getReviewsMeta = async (product_id) => {
   return output;
 };
 
+const postReview = async (reqBody) => {
+  const {
+    product_id,
+    rating,
+    summary,
+    body,
+    recommend,
+    name,
+    email,
+    photos,
+    characteristics
+  } = reqBody;
+
+  const newReviewId = await getNextValue('reviews');
+  const newReview = {
+    id: newReviewId,
+    product_id,
+    rating,
+    date: getCurrentUnixTimestamp(),
+    summary,
+    body,
+    recommend,
+    reported: false,
+    reviewer_name: name,
+    reviewer_email: email,
+    response: '',
+    helpfulness: 0,
+  };
+
+  const newReviewPhotos = [];
+  photos.forEach(async photoUrl => {
+    const newReviewPhotoId = await getNextValue('reviews_photos');
+    newReviewPhotos.push({
+      id: newReviewPhotoId,
+      review_id: newReviewId,
+      url: photoUrl,
+    });
+  });
+
+  const newCharacteristicReviews = [];
+  for (const characteristic_id in characteristics) {
+    const newCharacteristicReviewId = await getNextValue('characteristic_reviews');
+    newCharacteristicReviews.push({
+      id: newCharacteristicReviewId,
+      characteristic_id,
+      review_id: newReviewId,
+      value: characteristics[characteristic_id],
+    });
+  }
+
+  // insert the document
+  return await Review.create(newReview)
+    .then(() => ReviewPhoto.insertMany(newReviewPhotos))
+    .then(() => CharacteristicReview.insertMany(newCharacteristicReviews))
+    // then send back success
+    .then(() => STATUS.OK)
+    // or if error, send back not success
+    .catch(error => {
+      console.error(error);
+      return STATUS.ERROR;
+    });
+};
+
 // Export queries
 
 module.exports = {
   getNextValue,
   getReviews,
-  getReviewsMeta
+  getReviewsMeta,
+  postReview
 };

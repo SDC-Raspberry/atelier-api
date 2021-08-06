@@ -1,6 +1,9 @@
 // Initialize Server
 const express = require('express');
 const app = express();
+const bodyParser = require('body-parser');
+
+app.use(bodyParser.json());
 
 const db = require('./db/db.js');
 const queries = require('./db/queries.js');
@@ -30,19 +33,11 @@ app.get('/reviews/meta', (req, res) => {
 
 // POST /reviews
 app.post('/reviews', (req, res) => {
-  const {
-    product_id,
-    rating,
-    summary,
-    body,
-    recommend,
-    name,
-    email,
-    photos,
-    characteristics
-  } = req.body;
-
-  // Run the db query
+  queries.postReview(req.body)
+    .then(status => {
+      const message = status === 201 ? "CREATED" : "INTERNAL SERVER ERROR";
+      res.status(status).send(message);
+    });
 });
 
 // PUT /reviews/:review_id/helpful
