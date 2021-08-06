@@ -90,6 +90,71 @@ describe('Server tests', () => {
     });
   });
 
+  describe('POST /reviews', () => {
+    it('should get the expected status in return for success', () => {
+      const body = {
+        product_id: 12,
+        rating: 4,
+        summary: "I am liking these glasses",
+        body: "They are very dark. But that's good because I'm in erysunny spots",
+        recommend: false,
+        name: "Mister Twister",
+        email: "mister@twister.com",
+        photos: ["google.com"],
+        characteristics: {
+          "42": 4,
+          "41": 2
+        },
+      };
+      return axios.post('http://localhost:3000/reviews', body)
+        .then(response => assert.equal(response.status, 201));
+    });
+
+    it('should get the expected status in return for failure', () => {
+      const body = {
+        rating: 4,
+        body: "They are very dark. But that's good because I'm in erysunny spots",
+        recommend: false,
+        name: "Mister Twister",
+        email: "mister@twister.com",
+        photos: ["google.com"],
+        characteristics: {
+          "42": 4,
+          "41": 2
+        },
+      };
+      return axios.post('http://localhost:3000/reviews', body)
+        .then(response => { throw new Error('Should not succeed.'); })
+        .catch(error => assert.equal(error.response.status, 400));
+    });
+  });
+
+  describe('PUT /reviews/:review_id/helpful', () => {
+    it('should get the expected status in return for success', () => {
+      return axios.put('http://localhost:3000/reviews/5774968/helpful')
+        .then(response => assert.equal(response.status, 204));
+    });
+
+    it('should get the expected status in return for failure', () => {
+      return axios.put('http://localhost:3000/reviews/abcd/helpful')
+        .then(response => { throw new Error('Should not succeed.'); })
+        .catch(error => assert.equal(error.response.status, 400));
+    });
+  });
+
+  describe('PUT /reviews/:review_id/report', () => {
+    it('should get the expected status in return for success', () => {
+      return axios.put('http://localhost:3000/reviews/5774968/report')
+        .then(response => assert.equal(response.status, 204));
+    });
+
+    it('should get the expected status in return for failure', () => {
+      return axios.put('http://localhost:3000/reviews/abcd/report')
+        .then(response => { throw new Error('Should not succeed.'); })
+        .catch(error => assert.equal(error.response.status, 400));
+    });
+  });
+
   after((done) => {
     db.disconnect();
     server.close();

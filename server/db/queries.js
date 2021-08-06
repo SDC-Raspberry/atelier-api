@@ -259,6 +259,13 @@ const postReview = async (reqBody) => {
       characteristics
     } = reqBody;
 
+    if (!product_id || !rating || recommend === undefined || !name || !email || !photos || !characteristics) {
+      return {
+        status: STATUS.INVALID,
+        message: MESSAGE.INVALID,
+      };
+    }
+
     const newReviewId = await getNextValue('reviews');
     const newReview = {
       id: newReviewId,
@@ -316,7 +323,10 @@ const putReviewHelpful = async (review_id) => {
   try {
     review_id = Number(review_id);
     if (isNaN(review_id)) {
-      return STATUS.INVALID;
+      return {
+        status: STATUS.INVALID,
+        message: MESSAGE.INVALID,
+      };
     }
 
     await Review.findOneAndUpdate(
@@ -341,7 +351,10 @@ const putReviewReport = async (review_id) => {
   try {
     review_id = Number(review_id);
     if (isNaN(review_id)) {
-      return STATUS.INVALID;
+      return {
+        status: STATUS.INVALID,
+        message: MESSAGE.INVALID,
+      };
     }
 
     await Review.findOneAndUpdate(
