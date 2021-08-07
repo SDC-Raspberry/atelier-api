@@ -87,6 +87,12 @@ const getReviews = async (page, count, sort, product_id) => {
     const totalResults = offset + count;
     const reviewResults = await Review.aggregate()
       .match({ product_id })
+      .lookup({
+        from: 'reviews_photos',
+        localField: 'id',
+        foreignField: 'review_id',
+        as: 'photos',
+      })
       .project({
         _id: 0,
         review_id: '$id',
@@ -97,7 +103,11 @@ const getReviews = async (page, count, sort, product_id) => {
         reviewer_name: 1,
         reviewer_email: 1,
         response: 1,
-        helpfulness: 1
+        helpfulness: 1,
+        photos: {
+          id: 1,
+          url: 1
+        }
       })
       .limit(totalResults);
 
@@ -105,35 +115,6 @@ const getReviews = async (page, count, sort, product_id) => {
       reviewResults.sort(sortFunction);
     }
     reviewResults.splice(0, offset);
-    // Remove mongo default _id field
-    // reviewResults = reviewResults.map(result => {
-    //   result.review_id = result.id;
-    //   delete result._id;
-    //   delete result.id;
-    //   delete result.product_id;
-    //   delete result.reported;
-    //   delete result.reviewer_email;
-    //   return result;
-    // });
-
-    // Create array of executed queries as Promises
-    const photoResults = await reviewResults.map(async (result, index) => {
-      const photoQuery = ReviewPhoto.find()
-        .where({ review_id: result.review_id });
-      return await photoQuery.lean().exec();
-    });
-
-    // When all promises have resolved, add them to output
-    await Promise.all(photoResults)
-      .then(allResults => {
-        allResults.map((result, index) => {
-          reviewResults[index].photos = result.map(photo => {
-            delete photo._id;
-            delete photo.review_id;
-            return photo;
-          });
-        });
-      });
 
     output.results = reviewResults;
 
