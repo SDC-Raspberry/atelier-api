@@ -74,6 +74,8 @@ const getReviews = async (page, count, sort, product_id) => {
       results: [],
     };
 
+    product_id = Number(product_id);
+
     if (sort === "newest") {
       sortFunction = newestCompare;
     } else if (sort === "helpful") {
@@ -83,25 +85,36 @@ const getReviews = async (page, count, sort, product_id) => {
     }
     const offset = count * (page - 1);
     const totalResults = offset + count;
-    const reviewQuery = Review.find()
-      .where({ product_id: product_id })
+    const reviewResults = await Review.aggregate()
+      .match({ product_id })
+      .project({
+        _id: 0,
+        review_id: '$id',
+        date: 1,
+        summary: 1,
+        body: 1,
+        recommend: 1,
+        reviewer_name: 1,
+        reviewer_email: 1,
+        response: 1,
+        helpfulness: 1
+      })
       .limit(totalResults);
 
-    let reviewResults = await reviewQuery.lean().exec();
     if (sortFunction) {
       reviewResults.sort(sortFunction);
     }
     reviewResults.splice(0, offset);
     // Remove mongo default _id field
-    reviewResults = reviewResults.map(result => {
-      result.review_id = result.id;
-      delete result._id;
-      delete result.id;
-      delete result.product_id;
-      delete result.reported;
-      delete result.reviewer_email;
-      return result;
-    });
+    // reviewResults = reviewResults.map(result => {
+    //   result.review_id = result.id;
+    //   delete result._id;
+    //   delete result.id;
+    //   delete result.product_id;
+    //   delete result.reported;
+    //   delete result.reviewer_email;
+    //   return result;
+    // });
 
     // Create array of executed queries as Promises
     const photoResults = await reviewResults.map(async (result, index) => {
