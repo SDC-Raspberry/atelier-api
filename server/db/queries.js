@@ -12,6 +12,8 @@ const {
 const STATUS = {
   OK: 200,
   CREATED: 201,
+  NO_CONTENT: 204,
+  INVALID: 400,
   ERROR: 500,
 };
 
@@ -30,16 +32,16 @@ const getCurrentUnixTimestamp = () => Math.floor(new Date().getTime() / 1000);
 
 const newestCompare = (a, b) => {
   // Assuming UNIX timestamp
-  return a.date - b.date;
+  return b.date - a.date;
 }
 
 const helpfulCompare = (a, b) => {
-  return a.helpfulness - b.helpfulness;
+  return b.helpfulness - a.helpfulness;
 }
 
 const relevantCompare = (a, b) => {
   // Still don't know what this does. WIll set as helpfulness for now
-  return a.helpfulness - b.helpfulness;
+  return b.helpfulness - a.helpfulness;
 }
 
 const sum = (acc, value) => acc + value;
@@ -141,7 +143,7 @@ const getReviewsMeta = async (product_id) => {
 
     // Add recommendation
     let recommend;
-    if (review.recommend === true) {
+    if (review.recommend) {
       recommend = 1;
     } else {
       recommend = 0;
@@ -269,11 +271,49 @@ const postReview = async (reqBody) => {
     });
 };
 
+const putReviewHelpful = async (review_id) => {
+  review_id = Number(review_id);
+  if (isNaN(review_id)) {
+    return await STATUS.INVALID;
+  }
+
+  return Review.findOneAndUpdate(
+    { id: review_id },
+    { $inc: { helpfulness: 1 } },
+    { new: true }
+  ).exec()
+    .then(() => STATUS.NO_CONTENT)
+    .catch(error => {
+      console.error(error);
+      return STATUS.ERROR;
+    });
+};
+
+const putReviewReport = async (review_id) => {
+  review_id = Number(review_id);
+  if (isNaN(review_id)) {
+    return await STATUS.INVALID;
+  }
+
+  return Review.findOneAndUpdate(
+    { id: review_id },
+    { reported: true },
+    { new: true }
+  ).exec()
+    .then(() => STATUS.NO_CONTENT)
+    .catch(error => {
+      console.error(error);
+      return STATUS.ERROR;
+    });
+};
+
 // Export queries
 
 module.exports = {
   getNextValue,
   getReviews,
   getReviewsMeta,
-  postReview
+  postReview,
+  putReviewHelpful,
+  putReviewReport,
 };

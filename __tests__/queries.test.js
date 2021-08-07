@@ -62,17 +62,14 @@ describe("Query Tests", () => {
           assert.equal(response, 101);
         });
     });
-
-    after((done) => {
-      Counter.deleteMany({})
-        .then(() => done());
-    });
   });
 
   describe('getReviews', () => {
     beforeEach((done) => {
       Review.deleteMany({})
         .then(() => ReviewPhoto.deleteMany({}))
+        .then(() => Review.insertMany(mockData.review))
+        .then(() => ReviewPhoto.insertMany(mockData.reviewPhoto))
         .then(() => done());
     });
 
@@ -86,13 +83,11 @@ describe("Query Tests", () => {
         });
     });
 
-    it('should get two entries for a given product_id that include photo entries', () => {
-      return Review.collection.insertMany(mockData.review)
-        .then(() => ReviewPhoto.collection.insertMany(mockData.reviewPhoto))
-        .then(() => queries.getReviews(1, 5, undefined, 12))
+    it('should get entries for a given product_id that include photo entries', () => {
+      return queries.getReviews('1', '5', undefined, '12')
         .then(response => {
           const results = response.results;
-          assert.lengthOf(results, 2);
+          assert.lengthOf(results, 3);
           assert.propertyVal(results[0], 'reviewer_name', 'Sallie_Kovacek');
           assert.isArray(results[0].photos);
           assert.lengthOf(results[0].photos, 1);
@@ -101,20 +96,45 @@ describe("Query Tests", () => {
         });
     });
 
+    it('should organize entries by newest', () => {
+      return queries.getReviews('1', '5', 'newest', '12')
+        .then(response => {
+          const results = response.results;
+          assert.lengthOf(results, 3);
+          assert.propertyVal(results[0], 'reviewer_name', 'Curtis_King46');
+          assert.propertyVal(results[1], 'reviewer_name', 'Sallie_Kovacek');
+          assert.propertyVal(results[2], 'reviewer_name', 'Kip.Streich');
+        });
+    });
+
+    it('should organize entries by helpful', () => {
+      return queries.getReviews('1', '5', 'helpful', '12')
+        .then(response => {
+          const results = response.results;
+          assert.lengthOf(results, 3);
+          assert.propertyVal(results[0], 'reviewer_name', 'Kip.Streich');
+          assert.propertyVal(results[1], 'reviewer_name', 'Curtis_King46');
+          assert.propertyVal(results[2], 'reviewer_name', 'Sallie_Kovacek');
+        });
+    });
+
+    it('should organize entries by relevant', () => {
+      return queries.getReviews('1', '5', 'relevant', '12')
+        .then(response => {
+          const results = response.results;
+          assert.lengthOf(results, 3);
+          assert.propertyVal(results[0], 'reviewer_name', 'Kip.Streich');
+          assert.propertyVal(results[1], 'reviewer_name', 'Curtis_King46');
+          assert.propertyVal(results[2], 'reviewer_name', 'Sallie_Kovacek');
+        });
+    });
+
     it('should return an empty array when no entries exist at a given product_id', () => {
-      return Review.collection.insertMany(mockData.review)
-        .then(() => ReviewPhoto.collection.insertMany(mockData.reviewPhoto))
-        .then(() => queries.getReviews(1, 5, undefined, -1))
+      return queries.getReviews('1', '5', undefined, '0')
         .then(response => {
           assert.isArray(response.results);
           assert.lengthOf(response.results, 0);
         });
-    });
-
-    after((done) => {
-      Review.deleteMany({})
-        .then(() => ReviewPhoto.deleteMany({}))
-        .then(() => done());
     });
   });
 
@@ -146,19 +166,19 @@ describe("Query Tests", () => {
         });
     });
 
-    it('should collate both ratings into ratings object with one 2 and one 4', () => {
+    it('should collate ratings into ratings object', () => {
       return queries.getReviewsMeta(12)
         .then(response => {
+          assert.propertyVal(response.ratings, "4", 2);
           assert.propertyVal(response.ratings, "2", 1);
-          assert.propertyVal(response.ratings, "4", 1);
         });
     });
 
-    it('should collate both recommend values into recommended object with one 0 and one 1', () => {
+    it('should collate recommend values into recommended object', () => {
       return queries.getReviewsMeta(12)
         .then(response => {
+          assert.propertyVal(response.recommended, "1", 2);
           assert.propertyVal(response.recommended, "0", 1);
-          assert.propertyVal(response.recommended, "1", 1);
         });
     });
 
@@ -176,13 +196,6 @@ describe("Query Tests", () => {
           assert.equal(response.characteristics["Comfort"].value, (2 + 4) / 2);
           assert.equal(response.characteristics["Quality"].value, (4 + 3) / 2);
         });
-    });
-
-    after((done) => {
-      Review.deleteMany({})
-        .then(() => CharacteristicReview.deleteMany({}))
-        .then(() => Characteristic.deleteMany({}))
-        .then(() => done());
     });
   });
 
@@ -255,13 +268,77 @@ describe("Query Tests", () => {
           assert.propertyVal(secondResult, 'value', 4);
         });
     });
+  });
 
-    after((done) => {
+  describe('putReviewHelpful', () => {
+    beforeEach((done) => {
       Review.deleteMany({})
-        .then(() => ReviewPhoto.deleteMany({}))
-        .then(() => CharacteristicReview.deleteMany({}))
-        .then(() => Characteristic.deleteMany({}))
+        .then(() => Review.insertMany(mockData.review))
         .then(() => done());
+    });
+
+    it('should increment helpful number for selected review', () => {
+      return Review.findOne({ id: 2 })
+        .then(review => assert.propertyVal(review, 'helpfulness', 2))
+        .then(() => queries.putReviewHelpful('2'))
+        .then(status => assert.equal(status, 204))
+        .then(() => {
+          const query = Review.findOne({ id: 2 });
+          return query.lean().exec();
+        })
+        .then(result => {
+          assert.propertyVal(result, 'helpfulness', 3);
+        });
+    });
+
+    it('should return 400 if nothing or bad review_id provided', () => {
+      return queries.putReviewHelpful()
+        .then(status => assert.equal(status, 400))
+        .then(() => queries.putReviewHelpful('bad'))
+        .then(status => assert.equal(status, 400));
+    });
+  });
+
+  describe('putReviewReport', () => {
+    beforeEach((done) => {
+      Review.deleteMany({})
+        .then(() => Review.insertMany(mockData.review))
+        .then(() => done());
+    });
+
+    it('should set reported boolean to true for selected review', () => {
+      return Review.findOne({ id: 2 })
+        .then(review => assert.propertyVal(review, 'reported', false))
+        .then(() => queries.putReviewReport('2'))
+        .then(status => assert.equal(status, 204))
+        .then(() => {
+          const query = Review.findOne({ id: 2 });
+          return query.lean().exec();
+        })
+        .then(result => {
+          assert.propertyVal(result, 'reported', true);
+        });
+    });
+
+    it('should not change reported boolean if true for selected review', () => {
+      return Review.findOne({ id: 18 })
+        .then(review => assert.propertyVal(review, 'reported', true))
+        .then(() => queries.putReviewReport('18'))
+        .then(status => assert.equal(status, 204))
+        .then(() => {
+          const query = Review.findOne({ id: 18 });
+          return query.lean().exec();
+        })
+        .then(result => {
+          assert.propertyVal(result, 'reported', true);
+        });
+    });
+
+    it('should return 400 if nothing or bad review_id provided', () => {
+      return queries.putReviewReport()
+        .then(status => assert.equal(status, 400))
+        .then(() => queries.putReviewReport('bad'))
+        .then(status => assert.equal(status, 400));
     });
   });
 

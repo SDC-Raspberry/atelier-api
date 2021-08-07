@@ -46,7 +46,11 @@ app.put('/reviews/:review_id/helpful', (req, res) => {
     review_id,
   } = req.body;
 
-  // Run the db query
+  queries.putReviewHelpful(review_id)
+    .then(status => {
+      const message = status === 204 ? "NO CONTENT" : "INTERNAL SERVER ERROR";
+      res.status(status).send(message);
+    });
 });
 
 // PUT /reviews/:review_id/report
@@ -55,7 +59,11 @@ app.put('/reviews/:review_id/report', (req, res) => {
     review_id,
   } = req.body;
 
-  // Run the db query
+  queries.putReviewReport(review_id)
+    .then(status => {
+      const message = status === 204 ? "NO CONTENT" : "INTERNAL SERVER ERROR";
+      res.status(status).send(message);
+    });
 });
 
 // Start the server
