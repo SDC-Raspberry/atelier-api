@@ -142,11 +142,34 @@ const getReviewsMeta = async (product_id) => {
       characteristics: {},
     };
 
+    product_id = Number(product_id);
+
     // Get product reviews
-    const reviewsQuery = Review.find({ product_id })
-    let reviews;
-    await reviewsQuery.lean().exec()
-      .then(results => reviews = results);
+    const reviews = await Review.aggregate()
+      .match({ product_id });
+      // .lookup({
+      //   from: 'reviews_photos',
+      //   localField: 'id',
+      //   foreignField: 'review_id',
+      //   as: 'photos',
+      // })
+      // .project({
+      //   _id: 0,
+      //   review_id: '$id',
+      //   date: 1,
+      //   summary: 1,
+      //   body: 1,
+      //   recommend: 1,
+      //   reviewer_name: 1,
+      //   reviewer_email: 1,
+      //   response: 1,
+      //   helpfulness: 1,
+      //   photos: {
+      //     id: 1,
+      //     url: 1
+      //   }
+      // })
+      // .limit(totalResults);
 
     const ratingIds = [];
 
