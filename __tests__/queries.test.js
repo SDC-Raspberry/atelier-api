@@ -308,9 +308,9 @@ describe("Query Tests", () => {
 
     it('should return 400 if nothing or bad review_id provided', () => {
       return queries.putReviewHelpful()
-        .then(status => assert.equal(status, 400))
+        .then(response => assert.equal(response.status, 400))
         .then(() => queries.putReviewHelpful('bad'))
-        .then(status => assert.equal(status, 400));
+        .then(response => assert.equal(response.status, 400));
     });
   });
 
@@ -353,9 +353,9 @@ describe("Query Tests", () => {
 
     it('should return 400 if nothing or bad review_id provided', () => {
       return queries.putReviewReport()
-        .then(status => assert.equal(status, 400))
+        .then(response => assert.equal(response.status, 400))
         .then(() => queries.putReviewReport('bad'))
-        .then(status => assert.equal(status, 400));
+        .then(response => assert.equal(response.status, 400));
     });
   });
 
