@@ -87,6 +87,7 @@ const getReviews = async (page, count, sort, product_id) => {
     const totalResults = offset + count;
     const reviewResults = await Review.aggregate()
       .match({ product_id })
+      .limit(totalResults)
       .lookup({
         from: 'reviews_photos',
         localField: 'id',
@@ -109,7 +110,6 @@ const getReviews = async (page, count, sort, product_id) => {
           url: 1
         }
       })
-      .limit(totalResults);
 
     if (sortFunction) {
       reviewResults.sort(sortFunction);
@@ -135,72 +135,82 @@ const getReviews = async (page, count, sort, product_id) => {
 const getReviewsMeta = async (product_id) => {
   try {
     // create output object
-    const output = {
-      product_id,
-      ratings: {},
-      recommended: {},
-      characteristics: {},
-    };
-
     product_id = Number(product_id);
 
     // Get product reviews
     const reviews = await Review.aggregate()
-      .match({ product_id });
-      // .lookup({
-      //   from: 'reviews_photos',
-      //   localField: 'id',
-      //   foreignField: 'review_id',
-      //   as: 'photos',
-      // })
-      // .project({
-      //   _id: 0,
-      //   review_id: '$id',
-      //   date: 1,
-      //   summary: 1,
-      //   body: 1,
-      //   recommend: 1,
-      //   reviewer_name: 1,
-      //   reviewer_email: 1,
-      //   response: 1,
-      //   helpfulness: 1,
-      //   photos: {
-      //     id: 1,
-      //     url: 1
-      //   }
-      // })
-      // .limit(totalResults);
+      .match({ product_id })
+      .facet({
+        // Ids
+        ratingIds: [
+          { $project: {
+              _id: 0,
+              id: 1
+          }},
+          { $group: {
+            _id: null,
+            id: { $addToSet: "$id" }
+          }}
+        ],
+        // Ratings
+        ratingsOne: [
+          { $match: { rating: 1 }},
+          { $count: 'count' },
+        ],
+        ratingsTwo: [
+          { $match: { rating: 2 }},
+          { $count: 'count' },
+        ],
+        ratingsThree: [
+          { $match: { rating: 3 }},
+          { $count: 'count' },
+        ],
+        ratingsFour: [
+          { $match: { rating: 4 }},
+          { $count: 'count' }
+        ],
+        ratingsFive: [
+          { $match: { rating: 5 }},
+          { $count: 'count' },
+        ],
+        // Recommended
+        recommendTrue: [
+          { $match: { recommend: true }},
+          { $count: 'count' },
+        ],
+        recommendFalse: [
+          { $match: { recommend: false }},
+          { $count: 'count' },
+        ]
+      })
+      .addFields({ product_id })
+      .project({
+        product_id: 1,
+        ratingIds: { $ifNull: [
+          { $first: '$ratingIds.id' },
+          []
+        ]},
+        ratings: {
+          1: { $first: '$ratingsOne.count' },
+          2: { $first: '$ratingsTwo.count' },
+          3: { $first: '$ratingsThree.count' },
+          4: { $first: '$ratingsFour.count' },
+          5: { $first: '$ratingsFive.count' },
+        },
+        recommended: {
+          0: { $first: '$recommendFalse.count' },
+          1: { $first: '$recommendTrue.count' },
+        }
+      });
 
-    const ratingIds = [];
-
-    reviews.forEach((review) => {
-      // Add rating ID to ratingIds array
-      ratingIds.push(review.id);
-
-      // Add rating to output
-      if (!output.ratings[review.rating]) {
-        output.ratings[review.rating] = 1;
-      } else {
-        output.ratings[review.rating] += 1;
-      }
-
-      // Add recommendation
-      let recommend;
-      if (review.recommend) {
-        recommend = 1;
-      } else {
-        recommend = 0;
-      }
-      if (!output.recommended[recommend]) {
-        output.recommended[recommend] = 1;
-      } else {
-        output.recommended[recommend] += 1;
-      }
-    });
+    const output = {
+      ...reviews[0],
+      characteristics: {}
+    };
 
     // Get characteristics
 
-    const characteristicReviewResults = ratingIds.map(async (review_id) => {
+    const characteristicReviewResults = output.ratingIds.map(async (review_id) => {
       const query = CharacteristicReview.find({ review_id });
       return await query.lean().exec();
     });
