@@ -1,7 +1,10 @@
+require('dotenv').config()
+
 // Initialize Server
 const express = require('express');
 const app = express();
 const bodyParser = require('body-parser');
+const PORT = process.env.DB_PORT || 9999;
 
 app.use(bodyParser.json());
 
@@ -73,7 +76,7 @@ app.put('/reviews/:review_id/report', (req, res) => {
 });
 
 // Start the server
-const server = app.listen(3000, () => console.log('listening on 3000\n'));
+const server = app.listen(PORT, () => console.log(`listening on ${PORT}\n`));
 
 module.exports = {
   server,
