@@ -17,10 +17,8 @@ app.get('/reviews', (req, res) => {
     product_id
   } = req.query;
 
-  console.time('getReviews');
   queries.getReviews(page, count, sort, product_id)
     .then(response => {
-      console.timeEnd('getReviews');
       res.status(response.status).end(JSON.stringify(response.data));
     })
     .catch(error => res.status(500));
@@ -32,21 +30,17 @@ app.get('/reviews/meta', (req, res) => {
     product_id,
   } = req.query;
 
-  console.time('getReviewsMeta');
   queries.getReviewsMeta(product_id)
     .then(response => {
-      console.timeEnd('getReviewsMeta');
       res.status(response.status).end(JSON.stringify(response.data));
     })
-    .catch(error => res.status(500).message());
+    .catch(error => res.status(500));
 });
 
 // POST /reviews
 app.post('/reviews', (req, res) => {
-  console.time('postReview');
   queries.postReview(req.body)
     .then(response => {
-      console.timeEnd('postReview');
       res.status(response.status).send(JSON.stringify(response.message));
     })
     .catch(error => res.status(500));
@@ -58,12 +52,11 @@ app.put('/reviews/:review_id/helpful', (req, res) => {
     review_id,
   } = req.params;
 
-  console.time('putReviewHelpful');
   queries.putReviewHelpful(review_id)
     .then(response => {
-      console.timeEnd('putReviewHelpful');
       res.status(response.status).send(JSON.stringify(response.message));
-    });
+    })
+    .catch(error => res.status(500));
 });
 
 // PUT /reviews/:review_id/report
@@ -72,12 +65,11 @@ app.put('/reviews/:review_id/report', (req, res) => {
     review_id,
   } = req.params;
 
-  console.time('putReviewReport');
   queries.putReviewReport(review_id)
     .then(response => {
-      console.timeEnd('putReviewReport');
       res.status(response.status).send(JSON.stringify(response.message));
-    });
+    })
+    .catch(error => res.status(500));
 });
 
 // Start the server
