@@ -138,20 +138,9 @@ const getReviewsMeta = async (product_id) => {
     product_id = Number(product_id);
 
     // Get product reviews
-    const reviews = await Review.aggregate()
+    const output = await Review.aggregate()
       .match({ product_id })
       .facet({
-        // Ids
-        ratingIds: [
-          { $project: {
-              _id: 0,
-              id: 1
-          }},
-          { $group: {
-            _id: null,
-            id: { $addToSet: "$id" }
-          }}
-        ],
         // Ratings
         ratingsOne: [
           { $match: { rating: 1 }},
@@ -181,15 +170,61 @@ const getReviewsMeta = async (product_id) => {
         recommendFalse: [
           { $match: { recommend: false }},
           { $count: 'count' },
+        ],
+        // Characteristics
+        characteristics: [
+          { $project: {
+            _id: 0,
+            review_id: '$id'
+          }},
+          { $lookup: {
+            from: 'characteristic_reviews',
+            localField: 'review_id',
+            foreignField: 'review_id',
+            as: 'characteristic_reviews'
+          }},
+          { $unwind: '$characteristic_reviews' },
+          { $project: {
+            characteristic_id: '$characteristic_reviews.characteristic_id',
+            id: '$characteristic_reviews.id',
+            review_id: '$characteristic_reviews.review_id',
+            value: '$characteristic_reviews.value',
+          }},
+          { $lookup: {
+            from: 'characteristics',
+            localField: 'characteristic_id',
+            foreignField: 'id',
+            as: 'characteristic_details'
+          }},
+          { $project: {
+            id: 1,
+            name: {
+              $first: '$characteristic_details.name'
+            },
+            singleValue: '$value',
+          }},
+          { $group: {
+            _id: '$name',
+            id: {
+              $first: '$id'
+            },
+            value: {
+              $avg: '$singleValue'
+            },
+          }},
+          { $project: {
+            _id: 0,
+            k: '$_id',
+            v: {
+              id: '$id',
+              value: '$value'
+            }
+          }},
         ]
       })
       .addFields({ product_id })
       .project({
         product_id: 1,
-        ratingIds: { $ifNull: [
-          { $first: '$ratingIds.id' },
-          []
-        ]},
         ratings: {
           1: { $first: '$ratingsOne.count' },
           2: { $first: '$ratingsTwo.count' },
@@ -200,68 +235,18 @@ const getReviewsMeta = async (product_id) => {
         recommended: {
           0: { $first: '$recommendFalse.count' },
           1: { $first: '$recommendTrue.count' },
+        },
+        characteristics: {
+          $mergeObjects: [
+            { $arrayToObject: "$characteristics" }
+          ]
         }
       });
-
-    const output = {
-      ...reviews[0],
-      characteristics: {}
-    };
-
-    // Get characteristics
-
-    const characteristicReviewResults = output.ratingIds.map(async (review_id) => {
-      const query = CharacteristicReview.find({ review_id });
-      return await query.lean().exec();
-    });
-
-    const characteristicLookup = {};
-
-    // Add each characteristic to the lookup
-    await Promise.all(characteristicReviewResults)
-      .then(results => {
-        results.forEach(result => {
-          result.forEach(characteristic => {
-            if (!characteristicLookup[characteristic.characteristic_id]) {
-              characteristicLookup[characteristic.characteristic_id] = {
-                name: '',
-                ratings: [characteristic.value],
-              };
-            } else {
-              characteristicLookup[characteristic.characteristic_id].ratings.push(characteristic.value);
-            }
-          });
-        });
-      });
-
-    // Get the individual characteristic details
-    const characteristicResults = Object.keys(characteristicLookup).map(id => {
-      const query = Characteristic.find({ id });
-      return query.lean().exec();
-    });
-
-    await Promise.all(characteristicResults)
-      .then(results => {
-        results.forEach(characteristic => {
-          characteristic = characteristic[0];
-          characteristicLookup[characteristic.id].name = characteristic.name;
-        });
-      });
-
-    // Add correctly formatted characteristics to the output
-    for (const id in characteristicLookup) {
-      const characteristic = characteristicLookup[id];
-      const value = characteristic.ratings.reduce(sum, 0) / characteristic.ratings.length;
-      output.characteristics[characteristic.name] = {
-        id: Number(id),
-        value: value.toFixed(3),
-      };
-    }
 
     return {
       status: STATUS.OK,
       message: MESSAGE.OK,
-      data: output,
+      data: output[0],
     };
   } catch (error) {
     console.error(error);
