@@ -67,6 +67,13 @@ const ReviewPhoto = mongoose.model("reviews_photos", reviewPhotoSchema);
 const CharacteristicReview = mongoose.model("characteristic_reviews", characteristicReviewSchema);
 const Characteristic = mongoose.model("characteristics", characteristicSchema);
 
+Counter.ensureIndexes()
+  .then(() => Product.ensureIndexes())
+  .then(() => Review.ensureIndexes())
+  .then(() => ReviewPhoto.ensureIndexes())
+  .then(() => CharacteristicReview.ensureIndexes())
+  .then(() => Characteristic.ensureIndexes());
+
 module.exports = {
   Counter,
   Product,
