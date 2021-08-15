@@ -52,11 +52,11 @@ const productSchema = new mongoose.Schema({
 
 // Create indexes
 
-reviewSchema.index({ product_id: 1 });
-reviewSchema.index({ id: 1 });
-reviewPhotoSchema.index({ review_id: 1 });
-characteristicReviewSchema.index({ review_id: 1 });
-characteristicSchema.index({ id: 1 });
+// reviewSchema.index({ product_id: 1 });
+// reviewSchema.index({ id: 1 });
+// reviewPhotoSchema.index({ review_id: 1 });
+// characteristicReviewSchema.index({ review_id: 1 });
+// characteristicSchema.index({ id: 1 });
 
 // Create models
 
@@ -66,6 +66,13 @@ const Review = mongoose.model("reviews", reviewSchema);
 const ReviewPhoto = mongoose.model("reviews_photos", reviewPhotoSchema);
 const CharacteristicReview = mongoose.model("characteristic_reviews", characteristicReviewSchema);
 const Characteristic = mongoose.model("characteristics", characteristicSchema);
+
+Counter.ensureIndexes()
+  .then(() => Product.ensureIndexes())
+  .then(() => Review.ensureIndexes())
+  .then(() => ReviewPhoto.ensureIndexes())
+  .then(() => CharacteristicReview.ensureIndexes())
+  .then(() => Characteristic.ensureIndexes());
 
 module.exports = {
   Counter,

@@ -41,7 +41,7 @@ const getNextValue = async (collectionName) => {
   }
 };
 
-const getCurrentUnixTimestamp = () => Math.floor(new Date().getTime() / 1000);
+const getCurrentUnixTimestamp = () => Math.floor(Date.now() / 1000);
 
 const newestCompare = (a, b) => {
   // Assuming UNIX timestamp
@@ -109,7 +109,7 @@ const getReviews = async (page, count, sort, product_id) => {
         recommend: 1,
         reviewer_name: 1,
         reviewer_email: 1,
-        response: 1,
+        response: { $ifNull: [ '$summary', null ]},
         helpfulness: 1,
         photos: {
           id: 1,
@@ -267,28 +267,31 @@ const postReview = async (reqBody) => {
     }
 
     const newReviewId = await getNextValue('reviews');
-    const newReview = {
-      id: newReviewId,
-      product_id,
-      rating,
-      date: getCurrentUnixTimestamp(),
-      summary,
-      body,
-      recommend,
-      reported: false,
-      reviewer_name: name,
-      reviewer_email: email,
-      response: '',
-      helpfulness: 0,
-    };
+    const newReview = [{
+      insertOne: {
+        document: {
+          id: newReviewId,
+          product_id,
+          rating,
+          date: getCurrentUnixTimestamp(),
+          summary,
+          body,
+          recommend,
+          reported: false,
+          reviewer_name: name,
+          reviewer_email: email,
+          response: null,
+          helpfulness: 0,
+        }
+      }
+    }];
 
     const newReviewPhotos = [];
     photos.forEach(async photoUrl => {
-      const newReviewPhotoId = await getNextValue('reviews_photos');
       newReviewPhotos.push({
         insertOne: {
           document: {
-            id: newReviewPhotoId,
+            id: await getNextValue('reviews_photos'),
             review_id: newReviewId,
             url: photoUrl,
           },
@@ -297,28 +300,29 @@ const postReview = async (reqBody) => {
     });
 
     const newCharacteristicReviews = [];
-    for (const characteristic_id in characteristics) {
-      const newCharacteristicReviewId = await getNextValue('characteristic_reviews');
+    Object.keys(characteristics).forEach(async characteristic_id => {
       newCharacteristicReviews.push({
         insertOne: {
           document: {
-            id: newCharacteristicReviewId,
+            id: await getNextValue('characteristic_reviews'),
             characteristic_id,
             review_id: newReviewId,
             value: characteristics[characteristic_id],
           },
         },
       });
-    }
+    });
 
-    await Review.create(newReview);
-    await ReviewPhoto.bulkWrite(newReviewPhotos);
-    await CharacteristicReview.bulkWrite(newCharacteristicReviews);
-
-    return {
-      status: STATUS.CREATED,
-      message: MESSAGE.CREATED,
-    };
+    return await Promise.all([
+      Review.bulkWrite(newReview),
+      ReviewPhoto.bulkWrite(newReviewPhotos),
+      CharacteristicReview.bulkWrite(newCharacteristicReviews)
+    ]).then(() => {
+      return {
+        status: STATUS.CREATED,
+        message: MESSAGE.CREATED,
+      };
+    });
   } catch (error) {
     console.error(error);
     return {
