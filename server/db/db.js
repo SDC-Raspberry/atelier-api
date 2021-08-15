@@ -1,8 +1,14 @@
 // Initilize database
 
 const mongoose = require("mongoose");
-const dbName = "atelier-test";
-mongoose.connect(`mongodb://localhost:27017/${dbName}`, {
+const dbName = process.env.DB_NAME;
+const dbPort = process.env.DB_PORT;
+const dbAddress = process.env.DB_ADDRESS;
+
+const mongoAddress = `mongodb://${dbAddress}:${dbPort}/${dbName}`;
+console.log(`mongo connection address: ${mongoAddress}`);
+
+mongoose.connect(mongoAddress, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
@@ -25,9 +31,7 @@ db.on("error", console.error.bind(console, "connection error:"));
 db.once("open", () => {
   console.log(`Mongoose DB "${dbName}" initialized\n`)
 
-  Product.findOne({})
-    .then(result => console.log('products: ' + !!result))
-    .then(() => Review.findOne({}))
+  Review.findOne({})
     .then(result => console.log('reviews: ' + !!result))
     .then(() => ReviewPhoto.findOne({}))
     .then(result => console.log('reviews_photos: ' + !!result))

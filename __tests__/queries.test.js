@@ -1,7 +1,9 @@
 const assert = require('chai').assert;
 
 const mongoose = require("mongoose");
-const dbName = "atelier-test";
+const dbName = process.env.DB_NAME;
+const dbPort = process.env.DB_PORT;
+const dbAddress = process.env.DB_ADDRESS;
 
 const {
   Counter,
@@ -18,7 +20,7 @@ const mockData = require('./_mockData.js');
 
 describe("Query Tests", () => {
   before((done) => {
-    mongoose.connect(`mongodb://localhost:27017/${dbName}`, {
+    mongoose.connect(`mongodb://${dbAddress}:${dbPort}/${dbName}`, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });

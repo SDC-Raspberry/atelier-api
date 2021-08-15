@@ -109,7 +109,7 @@ const getReviews = async (page, count, sort, product_id) => {
         recommend: 1,
         reviewer_name: 1,
         reviewer_email: 1,
-        response: 1,
+        response: { $ifNull: [ '$summary', null ]},
         helpfulness: 1,
         photos: {
           id: 1,
@@ -280,7 +280,7 @@ const postReview = async (reqBody) => {
           reported: false,
           reviewer_name: name,
           reviewer_email: email,
-          response: '',
+          response: null,
           helpfulness: 0,
         }
       }
