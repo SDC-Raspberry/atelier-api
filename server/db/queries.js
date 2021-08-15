@@ -74,6 +74,8 @@ const getReviews = async (page, count, sort, product_id) => {
       results: [],
     };
 
+    product_id = Number(product_id);
+
     if (sort === "newest") {
       sortFunction = newestCompare;
     } else if (sort === "helpful") {
@@ -83,44 +85,36 @@ const getReviews = async (page, count, sort, product_id) => {
     }
     const offset = count * (page - 1);
     const totalResults = offset + count;
-    const reviewQuery = Review.find()
-      .where({ product_id: product_id })
-      .limit(totalResults);
+    const reviewResults = await Review.aggregate()
+      .match({ product_id })
+      .limit(totalResults)
+      .lookup({
+        from: 'reviews_photos',
+        localField: 'id',
+        foreignField: 'review_id',
+        as: 'photos',
+      })
+      .project({
+        _id: 0,
+        review_id: '$id',
+        date: 1,
+        summary: 1,
+        body: 1,
+        recommend: 1,
+        reviewer_name: 1,
+        reviewer_email: 1,
+        response: 1,
+        helpfulness: 1,
+        photos: {
+          id: 1,
+          url: 1
+        }
+      })
 
-    let reviewResults = await reviewQuery.lean().exec();
     if (sortFunction) {
       reviewResults.sort(sortFunction);
     }
     reviewResults.splice(0, offset);
-    // Remove mongo default _id field
-    reviewResults = reviewResults.map(result => {
-      result.review_id = result.id;
-      delete result._id;
-      delete result.id;
-      delete result.product_id;
-      delete result.reported;
-      delete result.reviewer_email;
-      return result;
-    });
-
-    // Create array of executed queries as Promises
-    const photoResults = await reviewResults.map(async (result, index) => {
-      const photoQuery = ReviewPhoto.find()
-        .where({ review_id: result.review_id });
-      return await photoQuery.lean().exec();
-    });
-
-    // When all promises have resolved, add them to output
-    await Promise.all(photoResults)
-      .then(allResults => {
-        allResults.map((result, index) => {
-          reviewResults[index].photos = result.map(photo => {
-            delete photo._id;
-            delete photo.review_id;
-            return photo;
-          });
-        });
-      });
 
     output.results = reviewResults;
 
@@ -141,100 +135,118 @@ const getReviews = async (page, count, sort, product_id) => {
 const getReviewsMeta = async (product_id) => {
   try {
     // create output object
-    const output = {
-      product_id,
-      ratings: {},
-      recommended: {},
-      characteristics: {},
-    };
+    product_id = Number(product_id);
 
     // Get product reviews
-    const reviewsQuery = Review.find({ product_id })
-    let reviews;
-    await reviewsQuery.lean().exec()
-      .then(results => reviews = results);
-
-    const ratingIds = [];
-
-    reviews.forEach((review) => {
-      // Add rating ID to ratingIds array
-      ratingIds.push(review.id);
-
-      // Add rating to output
-      if (!output.ratings[review.rating]) {
-        output.ratings[review.rating] = 1;
-      } else {
-        output.ratings[review.rating] += 1;
-      }
-
-      // Add recommendation
-      let recommend;
-      if (review.recommend) {
-        recommend = 1;
-      } else {
-        recommend = 0;
-      }
-      if (!output.recommended[recommend]) {
-        output.recommended[recommend] = 1;
-      } else {
-        output.recommended[recommend] += 1;
-      }
-    });
-
-    // Get characteristics
-
-    const characteristicReviewResults = ratingIds.map(async (review_id) => {
-      const query = CharacteristicReview.find({ review_id });
-      return await query.lean().exec();
-    });
-
-    const characteristicLookup = {};
-
-    // Add each characteristic to the lookup
-    await Promise.all(characteristicReviewResults)
-      .then(results => {
-        results.forEach(result => {
-          result.forEach(characteristic => {
-            if (!characteristicLookup[characteristic.characteristic_id]) {
-              characteristicLookup[characteristic.characteristic_id] = {
-                name: '',
-                ratings: [characteristic.value],
-              };
-            } else {
-              characteristicLookup[characteristic.characteristic_id].ratings.push(characteristic.value);
+    const output = await Review.aggregate()
+      .match({ product_id })
+      .facet({
+        // Ratings
+        ratingsOne: [
+          { $match: { rating: 1 }},
+          { $count: 'count' },
+        ],
+        ratingsTwo: [
+          { $match: { rating: 2 }},
+          { $count: 'count' },
+        ],
+        ratingsThree: [
+          { $match: { rating: 3 }},
+          { $count: 'count' },
+        ],
+        ratingsFour: [
+          { $match: { rating: 4 }},
+          { $count: 'count' }
+        ],
+        ratingsFive: [
+          { $match: { rating: 5 }},
+          { $count: 'count' },
+        ],
+        // Recommended
+        recommendTrue: [
+          { $match: { recommend: true }},
+          { $count: 'count' },
+        ],
+        recommendFalse: [
+          { $match: { recommend: false }},
+          { $count: 'count' },
+        ],
+        // Characteristics
+        characteristics: [
+          { $project: {
+            _id: 0,
+            review_id: '$id'
+          }},
+          { $lookup: {
+            from: 'characteristic_reviews',
+            localField: 'review_id',
+            foreignField: 'review_id',
+            as: 'characteristic_reviews'
+          }},
+          { $unwind: '$characteristic_reviews' },
+          { $project: {
+            characteristic_id: '$characteristic_reviews.characteristic_id',
+            id: '$characteristic_reviews.id',
+            review_id: '$characteristic_reviews.review_id',
+            value: '$characteristic_reviews.value',
+          }},
+          { $lookup: {
+            from: 'characteristics',
+            localField: 'characteristic_id',
+            foreignField: 'id',
+            as: 'characteristic_details'
+          }},
+          { $project: {
+            id: 1,
+            name: {
+              $first: '$characteristic_details.name'
+            },
+            singleValue: '$value',
+          }},
+          { $group: {
+            _id: '$name',
+            id: {
+              $first: '$id'
+            },
+            value: {
+              $avg: '$singleValue'
+            },
+          }},
+          { $project: {
+            _id: 0,
+            k: '$_id',
+            v: {
+              id: '$id',
+              value: '$value'
             }
-          });
-        });
+          }},
+        ]
+      })
+      .addFields({ product_id })
+      .project({
+        product_id: 1,
+        ratings: {
+          1: { $first: '$ratingsOne.count' },
+          2: { $first: '$ratingsTwo.count' },
+          3: { $first: '$ratingsThree.count' },
+          4: { $first: '$ratingsFour.count' },
+          5: { $first: '$ratingsFive.count' },
+        },
+        recommended: {
+          0: { $first: '$recommendFalse.count' },
+          1: { $first: '$recommendTrue.count' },
+        },
+        characteristics: {
+          $mergeObjects: [
+            { $arrayToObject: "$characteristics" }
+          ]
+        }
       });
-
-    // Get the individual characteristic details
-    const characteristicResults = Object.keys(characteristicLookup).map(id => {
-      const query = Characteristic.find({ id });
-      return query.lean().exec();
-    });
-
-    await Promise.all(characteristicResults)
-      .then(results => {
-        results.forEach(characteristic => {
-          characteristic = characteristic[0];
-          characteristicLookup[characteristic.id].name = characteristic.name;
-        });
-      });
-
-    // Add correctly formatted characteristics to the output
-    for (const id in characteristicLookup) {
-      const characteristic = characteristicLookup[id];
-      const value = characteristic.ratings.reduce(sum, 0) / characteristic.ratings.length;
-      output.characteristics[characteristic.name] = {
-        id: Number(id),
-        value: value.toFixed(3),
-      };
-    }
 
     return {
       status: STATUS.OK,
       message: MESSAGE.OK,
-      data: output,
+      data: output[0],
     };
   } catch (error) {
     console.error(error);
