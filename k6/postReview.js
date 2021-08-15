@@ -19,10 +19,9 @@ const newReview = {
   },
 };
 
+const headers = { headers: { 'Content-Type': 'application/json' } };
+
 export default function () {
-  const low = 900000;
-  const high = 1000011;
-  const id = Math.floor(Math.random() * (high - low)) + low;
-  http.post(`http://localhost:3000/reviews/`, newReview);
+  http.post(`http://localhost:3000/reviews/`, JSON.stringify(newReview), headers);
   sleep(1);
 };
