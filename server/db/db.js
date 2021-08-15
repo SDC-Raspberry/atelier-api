@@ -10,6 +10,7 @@ mongoose.connect(`mongodb://localhost:27017/${dbName}`, {
 // Get Models
 
 const {
+  Counter,
   Product,
   Review,
   ReviewPhoto,
@@ -33,7 +34,9 @@ db.once("open", () => {
     .then(() => CharacteristicReview.findOne({}))
     .then(result => console.log('characteristics_reviews: ' + !!result))
     .then(() => Characteristic.findOne({}))
-    .then(result => console.log('characteristics: ' + !!result));
+    .then(result => console.log('characteristics: ' + !!result))
+    .then(() => Counter.findOne({}))
+    .then(result => console.log('counter: ' + !!result));
 });
 
 db.disconnect = () => {

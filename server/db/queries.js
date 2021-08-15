@@ -65,7 +65,6 @@ const getReviews = async (page, count, sort, product_id) => {
   try {
     page = page ? Number(page) : 1;
     count = count ? Number(count) : 5;
-    let sortFunction;
 
     const output = {
       product: product_id,
@@ -76,17 +75,24 @@ const getReviews = async (page, count, sort, product_id) => {
 
     product_id = Number(product_id);
 
+    let sortKey;
+    let sortFunction;
     if (sort === "newest") {
+      sortKey = 'date';
       sortFunction = newestCompare;
     } else if (sort === "helpful") {
+      sortKey = 'helpfulness';
       sortFunction = helpfulCompare;
     } else if (sort === "relevant") {
+      sortKey = 'helpfulness';
       sortFunction = relevantCompare;
     }
     const offset = count * (page - 1);
     const totalResults = offset + count;
     const reviewResults = await Review.aggregate()
       .match({ product_id })
+      .sort({ [sortKey]: -1 })
+      .skip(offset)
       .limit(totalResults)
       .lookup({
         from: 'reviews_photos',
@@ -109,12 +115,7 @@ const getReviews = async (page, count, sort, product_id) => {
           id: 1,
           url: 1
         }
-      })
-
-    if (sortFunction) {
-      reviewResults.sort(sortFunction);
-    }
-    reviewResults.splice(0, offset);
+      });
 
     output.results = reviewResults;
 
@@ -142,34 +143,28 @@ const getReviewsMeta = async (product_id) => {
       .match({ product_id })
       .facet({
         // Ratings
-        ratingsOne: [
-          { $match: { rating: 1 }},
-          { $count: 'count' },
-        ],
-        ratingsTwo: [
-          { $match: { rating: 2 }},
-          { $count: 'count' },
-        ],
-        ratingsThree: [
-          { $match: { rating: 3 }},
-          { $count: 'count' },
-        ],
-        ratingsFour: [
-          { $match: { rating: 4 }},
-          { $count: 'count' }
-        ],
-        ratingsFive: [
-          { $match: { rating: 5 }},
-          { $count: 'count' },
+        _ratings: [
+          { $group: {
+            _id: "$rating",
+            count: { $sum: 1 }
+          }},
+          { $project: {
+            _id: 0,
+            k: { $toString: "$_id" },
+            v: "$count"
+          }},
         ],
         // Recommended
-        recommendTrue: [
-          { $match: { recommend: true }},
-          { $count: 'count' },
-        ],
-        recommendFalse: [
-          { $match: { recommend: false }},
-          { $count: 'count' },
+        _recommended: [
+          { $group: {
+            _id: "$recommend",
+            count: { $sum: 1 }
+          }},
+          { $project: {
+            _id: 0,
+            k: { $toString: { $cond: ["$_id", 1, 0 ]}},
+            v: "$count"
+          }},
         ],
         // Characteristics
         characteristics: [
@@ -198,19 +193,13 @@ const getReviewsMeta = async (product_id) => {
           }},
           { $project: {
             id: 1,
-            name: {
-              $first: '$characteristic_details.name'
-            },
+            name: { $first: '$characteristic_details.name' },
             singleValue: '$value',
           }},
           { $group: {
             _id: '$name',
-            id: {
-              $first: '$id'
-            },
-            value: {
-              $avg: '$singleValue'
-            },
+            id: { $first: '$id' },
+            value: { $avg: '$singleValue' },
           }},
           { $project: {
             _id: 0,
@@ -224,17 +213,16 @@ const getReviewsMeta = async (product_id) => {
       })
       .addFields({ product_id })
       .project({
-        product_id: 1,
+        product_id: product_id,
         ratings: {
-          1: { $first: '$ratingsOne.count' },
-          2: { $first: '$ratingsTwo.count' },
-          3: { $first: '$ratingsThree.count' },
-          4: { $first: '$ratingsFour.count' },
-          5: { $first: '$ratingsFive.count' },
+          $mergeObjects: [
+            { $arrayToObject: "$_ratings" }
+          ]
         },
         recommended: {
-          0: { $first: '$recommendFalse.count' },
-          1: { $first: '$recommendTrue.count' },
+          $mergeObjects: [
+            { $arrayToObject: "$_recommended" }
+          ]
         },
         characteristics: {
           $mergeObjects: [
@@ -298,9 +286,13 @@ const postReview = async (reqBody) => {
     photos.forEach(async photoUrl => {
       const newReviewPhotoId = await getNextValue('reviews_photos');
       newReviewPhotos.push({
-        id: newReviewPhotoId,
-        review_id: newReviewId,
-        url: photoUrl,
+        insertOne: {
+          document: {
+            id: newReviewPhotoId,
+            review_id: newReviewId,
+            url: photoUrl,
+          },
+        },
       });
     });
 
@@ -308,16 +300,21 @@ const postReview = async (reqBody) => {
     for (const characteristic_id in characteristics) {
       const newCharacteristicReviewId = await getNextValue('characteristic_reviews');
       newCharacteristicReviews.push({
-        id: newCharacteristicReviewId,
-        characteristic_id,
-        review_id: newReviewId,
-        value: characteristics[characteristic_id],
+        insertOne: {
+          document: {
+            id: newCharacteristicReviewId,
+            characteristic_id,
+            review_id: newReviewId,
+            value: characteristics[characteristic_id],
+          },
+        },
       });
     }
 
     await Review.create(newReview);
-    await ReviewPhoto.insertMany(newReviewPhotos);
-    await CharacteristicReview.insertMany(newCharacteristicReviews);
+    await ReviewPhoto.bulkWrite(newReviewPhotos);
+    await CharacteristicReview.bulkWrite(newCharacteristicReviews);
+
     return {
       status: STATUS.CREATED,
       message: MESSAGE.CREATED,
@@ -343,9 +340,9 @@ const putReviewHelpful = async (review_id) => {
 
     await Review.findOneAndUpdate(
       { id: review_id },
-      { $inc: { helpfulness: 1 } },
-      { new: true }
+      { $inc: { helpfulness: 1 } }
     ).exec();
+
     return {
       status: STATUS.NO_CONTENT,
       message: MESSAGE.NO_CONTENT,
@@ -372,8 +369,8 @@ const putReviewReport = async (review_id) => {
     await Review.findOneAndUpdate(
       { id: review_id },
       { reported: true },
-      { new: true }
     ).exec();
+
     return {
       status: STATUS.NO_CONTENT,
       message: MESSAGE.NO_CONTENT,

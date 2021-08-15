@@ -8,6 +8,6 @@ export default function () {
   const low = 900000;
   const high = 1000011;
   const id = Math.floor(Math.random() * (high - low)) + low;
-  http.get(`http://localhost:3000/reviews/meta/${id}`);
+  http.get(`http://localhost:3000/reviews/meta?product_id=${id}`);
   sleep(1);
 };
