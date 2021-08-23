@@ -75,6 +75,10 @@ app.put('/reviews/:review_id/report', (req, res) => {
     .catch(error => res.status(500));
 });
 
+app.get(`/${process.env.LOADERIO_API}`, (req, res) => {
+  res.send(process.env.LOADERIO_API);
+});
+
 // Start the server
 const server = app.listen(PORT, () => console.log(`listening on ${PORT}\n`));
 
