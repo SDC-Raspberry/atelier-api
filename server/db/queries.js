@@ -155,107 +155,121 @@ const getReviews = async (page, count, sort, product_id) => {
 
 const getReviewsMeta = async (product_id) => {
   try {
-    // create output object
-    product_id = Number(product_id);
+    const redisKey = getRedisKey('getReviewsMeta', { product_id });
 
-    // Get product reviews
-    const output = await Review.aggregate()
-      .match({ product_id })
-      .facet({
-        // Ratings
-        _ratings: [
-          { $group: {
-            _id: "$rating",
-            count: { $sum: 1 }
-          }},
-          { $project: {
-            _id: 0,
-            k: { $toString: "$_id" },
-            v: "$count"
-          }},
-        ],
-        // Recommended
-        _recommended: [
-          { $group: {
-            _id: "$recommend",
-            count: { $sum: 1 }
-          }},
-          { $project: {
-            _id: 0,
-            k: { $toString: { $cond: ["$_id", 1, 0 ]}},
-            v: "$count"
-          }},
-        ],
-        // Characteristics
-        characteristics: [
-          { $project: {
-            _id: 0,
-            review_id: '$id'
-          }},
-          { $lookup: {
-            from: 'characteristic_reviews',
-            localField: 'review_id',
-            foreignField: 'review_id',
-            as: 'characteristic_reviews'
-          }},
-          { $unwind: '$characteristic_reviews' },
-          { $project: {
-            characteristic_id: '$characteristic_reviews.characteristic_id',
-            id: '$characteristic_reviews.id',
-            review_id: '$characteristic_reviews.review_id',
-            value: '$characteristic_reviews.value',
-          }},
-          { $lookup: {
-            from: 'characteristics',
-            localField: 'characteristic_id',
-            foreignField: 'id',
-            as: 'characteristic_details'
-          }},
-          { $project: {
-            id: 1,
-            name: { $first: '$characteristic_details.name' },
-            singleValue: '$value',
-          }},
-          { $group: {
-            _id: '$name',
-            id: { $first: '$id' },
-            value: { $avg: '$singleValue' },
-          }},
-          { $project: {
-            _id: 0,
-            k: '$_id',
-            v: {
-              id: '$id',
-              value: '$value'
-            }
-          }},
-        ]
-      })
-      .addFields({ product_id })
-      .project({
-        product_id: product_id,
-        ratings: {
-          $mergeObjects: [
-            { $arrayToObject: "$_ratings" }
-          ]
-        },
-        recommended: {
-          $mergeObjects: [
-            { $arrayToObject: "$_recommended" }
-          ]
-        },
-        characteristics: {
-          $mergeObjects: [
-            { $arrayToObject: "$characteristics" }
-          ]
-        }
-      });
+    const cachedData = await redisGet(redisKey);
 
-    return {
-      status: STATUS.OK,
-      message: MESSAGE.OK,
-      data: output[0],
-    };
+    if (cachedData) {
+      return {
+        status: STATUS.OK,
+        message: MESSAGE.OK,
+        data: cachedData,
+      };
+    } else {
+      // create output object
+      product_id = Number(product_id);
+
+      // Get product reviews
+      const output = await Review.aggregate()
+        .match({ product_id })
+        .facet({
+          // Ratings
+          _ratings: [
+            { $group: {
+              _id: "$rating",
+              count: { $sum: 1 }
+            }},
+            { $project: {
+              _id: 0,
+              k: { $toString: "$_id" },
+              v: "$count"
+            }},
+          ],
+          // Recommended
+          _recommended: [
+            { $group: {
+              _id: "$recommend",
+              count: { $sum: 1 }
+            }},
+            { $project: {
+              _id: 0,
+              k: { $toString: { $cond: ["$_id", 1, 0 ]}},
+              v: "$count"
+            }},
+          ],
+          // Characteristics
+          characteristics: [
+            { $project: {
+              _id: 0,
+              review_id: '$id'
+            }},
+            { $lookup: {
+              from: 'characteristic_reviews',
+              localField: 'review_id',
+              foreignField: 'review_id',
+              as: 'characteristic_reviews'
+            }},
+            { $unwind: '$characteristic_reviews' },
+            { $project: {
+              characteristic_id: '$characteristic_reviews.characteristic_id',
+              id: '$characteristic_reviews.id',
+              review_id: '$characteristic_reviews.review_id',
+              value: '$characteristic_reviews.value',
+            }},
+            { $lookup: {
+              from: 'characteristics',
+              localField: 'characteristic_id',
+              foreignField: 'id',
+              as: 'characteristic_details'
+            }},
+            { $project: {
+              id: 1,
+              name: { $first: '$characteristic_details.name' },
+              singleValue: '$value',
+            }},
+            { $group: {
+              _id: '$name',
+              id: { $first: '$id' },
+              value: { $avg: '$singleValue' },
+            }},
+            { $project: {
+              _id: 0,
+              k: '$_id',
+              v: {
+                id: '$id',
+                value: '$value'
+              }
+            }},
+          ]
+        })
+        .addFields({ product_id })
+        .project({
+          product_id: product_id,
+          ratings: {
+            $mergeObjects: [
+              { $arrayToObject: "$_ratings" }
+            ]
+          },
+          recommended: {
+            $mergeObjects: [
+              { $arrayToObject: "$_recommended" }
+            ]
+          },
+          characteristics: {
+            $mergeObjects: [
+              { $arrayToObject: "$characteristics" }
+            ]
+          }
+        });
+
+      client.setex(redisKey, 1440, JSON.stringify(output[0]));
+
+      return {
+        status: STATUS.OK,
+        message: MESSAGE.OK,
+        data: output[0],
+      };
+    }
   } catch (error) {
     console.error(error);
     return {
