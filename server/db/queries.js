@@ -1,4 +1,10 @@
 const {
+  client,
+  getRedisKey,
+  redisGet
+} = require('./store.js');
+
+const {
   Counter,
   Product,
   Review,
@@ -73,57 +79,71 @@ const getReviews = async (page, count, sort, product_id) => {
       results: [],
     };
 
-    product_id = Number(product_id);
+    const redisKey = getRedisKey('getReviews', { product_id, page, count });
 
-    let sortKey;
-    let sortFunction;
-    if (sort === "newest") {
-      sortKey = 'date';
-      sortFunction = newestCompare;
-    } else if (sort === "helpful") {
-      sortKey = 'helpfulness';
-      sortFunction = helpfulCompare;
-    } else if (sort === "relevant") {
-      sortKey = 'helpfulness';
-      sortFunction = relevantCompare;
+    const cachedData = await redisGet(redisKey);
+
+    if (cachedData) {
+      return {
+        status: STATUS.OK,
+        message: MESSAGE.OK,
+        data: cachedData,
+      };
+    } else {
+      product_id = Number(product_id);
+
+      let sortKey;
+      let sortFunction;
+      if (sort === "newest") {
+        sortKey = 'date';
+        sortFunction = newestCompare;
+      } else if (sort === "helpful") {
+        sortKey = 'helpfulness';
+        sortFunction = helpfulCompare;
+      } else if (sort === "relevant") {
+        sortKey = 'helpfulness';
+        sortFunction = relevantCompare;
+      }
+      const offset = count * (page - 1);
+      const totalResults = offset + count;
+      const reviewResults = await Review.aggregate()
+        .match({ product_id })
+        .sort({ [sortKey]: -1 })
+        .skip(offset)
+        .limit(totalResults)
+        .lookup({
+          from: 'reviews_photos',
+          localField: 'id',
+          foreignField: 'review_id',
+          as: 'photos',
+        })
+        .project({
+          _id: 0,
+          review_id: '$id',
+          date: 1,
+          summary: 1,
+          body: 1,
+          recommend: 1,
+          reviewer_name: 1,
+          reviewer_email: 1,
+          response: { $ifNull: [ '$summary', null ]},
+          helpfulness: 1,
+          photos: {
+            id: 1,
+            url: 1
+          }
+        });
+
+      output.results = reviewResults;
+
+      client.setex(redisKey, 1440, JSON.stringify(output));
+
+      return {
+        status: STATUS.OK,
+        message: MESSAGE.OK,
+        data: output,
+      };
     }
-    const offset = count * (page - 1);
-    const totalResults = offset + count;
-    const reviewResults = await Review.aggregate()
-      .match({ product_id })
-      .sort({ [sortKey]: -1 })
-      .skip(offset)
-      .limit(totalResults)
-      .lookup({
-        from: 'reviews_photos',
-        localField: 'id',
-        foreignField: 'review_id',
-        as: 'photos',
-      })
-      .project({
-        _id: 0,
-        review_id: '$id',
-        date: 1,
-        summary: 1,
-        body: 1,
-        recommend: 1,
-        reviewer_name: 1,
-        reviewer_email: 1,
-        response: { $ifNull: [ '$summary', null ]},
-        helpfulness: 1,
-        photos: {
-          id: 1,
-          url: 1
-        }
-      });
-
-    output.results = reviewResults;
-
-    return {
-      status: STATUS.OK,
-      message: MESSAGE.OK,
-      data: output,
-    };
   } catch (error) {
     console.error(error);
     return {

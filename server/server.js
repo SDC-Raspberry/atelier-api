@@ -5,7 +5,6 @@ const express = require('express');
 const app = express();
 const bodyParser = require('body-parser');
 const PORT = process.env.SERVER_PORT || 9999;
-
 app.use(bodyParser.json());
 
 const db = require('./db/db.js');
