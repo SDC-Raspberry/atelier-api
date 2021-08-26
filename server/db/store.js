@@ -9,7 +9,11 @@ client.on("error", (error) => {
 
 const getRedisKey = (routeName, params) => {
   let redisKey = routeName;
-  const sortedKeys = Object.keys(params).sort();
+  const { product_id } = params;
+  if (product_id) {
+    redisKey += product_id;
+  }
+  let sortedKeys = Object.keys(params).sort().filter(key => key !== 'product_id');
   for (let i = 0; i < sortedKeys.length; i++) {
     const key = sortedKeys[i];
     redisKey += params[key];
@@ -25,5 +29,5 @@ const redisGet = util.promisify(client.get).bind(client);
 module.exports = {
   client,
   getRedisKey,
-  redisGet
+  redisGet,
 };

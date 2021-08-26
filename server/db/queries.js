@@ -1,7 +1,7 @@
 const {
   client,
   getRedisKey,
-  redisGet
+  redisGet,
 } = require('./store.js');
 
 const {
